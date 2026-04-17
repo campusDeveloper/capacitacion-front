@@ -1,0 +1,67 @@
+/* CLASES DATEPICKER NORMAL. */
+@import './popoverPicker.scss';
+/* CLASES DEL DATEPICKER POR RANGO.*/
+@import './popoverPickerRange.scss';
+/* CLASES DEL TIMEPICKER */
+@import './popoverTimePicker.scss';
+/* CLASES DEL SELECT.*/
+@import './popoverSelect.scss';
+/* CLASES DEL DROPDOWN */
+@import './popoverDropdown.scss';
+/* CLASES POPOVER MAP */
+@import './popoverTooltipMap.scss';
+
+
+/* Clases para el popover del tooltip. */
+%style-tooltip{
+	background-color: rgb(var(--xx-color-surface-dark-tertiary)) !important;
+    outline-color: rgb(var(--xx-color-surface-dark-tertiary)) !important;
+	border-radius: 8px;
+	color: rgb(var(--xx-color-white-500));
+	font-family: "GoogleSansFlex-Regular-24pt";
+	font-weight: 400;
+	min-height: 28px;
+}
+
+.el-popper {
+    font-family: 'GoogleSansFlex-Regular-24pt';
+	&.not-padding{
+		padding: 0 !important;
+	}
+	&.br-12{
+		border-radius: 12px !important;
+	}
+	&:not(.el-select__popper, .el-picker__popper, .popper-side-menu, .custom-popover ){
+		&.is-light{
+			@extend %style-tooltip;
+		}
+		&.is-dark{
+			@extend %style-tooltip;
+		}
+	}
+	&.custom-popover {
+		background-color: rgb(var(--xx-color-action-menu-surface)) !important;
+		border-radius: 12px !important;
+	}
+	.el-popper__arrow{
+		background-color: transparent !important;
+
+        &::before{
+            background-color: transparent !important;
+			border-color: transparent !important;
+        }
+	}
+	&.z-index {
+		z-index: 3100 !important;
+	}
+	&.popper-side-menu {
+		background-color: rgb(var(--xx-sidemenu-item-background-hover)) !important;
+		border: none !important;
+		box-shadow: none !important;
+		padding: 10px 0 !important;
+		border-radius: 0 0 8px 8px !important;
+	}
+}
+
+
+

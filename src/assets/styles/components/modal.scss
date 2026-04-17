@@ -1,0 +1,29 @@
+
+.el-overlay {
+	.el-overlay-dialog {
+		display: flex !important;
+		align-items: center !important;
+		justify-content: center !important;
+
+		.el-dialog.el-dialog--center {
+			padding: 0 !important;
+			border-radius: 12px;
+			margin: 0 !important;
+			overflow: hidden;
+
+			.el-dialog__header {
+				padding-bottom: 0 !important;
+				background-color: rgb(var(--xx-color-white-50));
+			}
+			.el-dialog__body {
+				background-color: transparent;
+			}
+			.el-dialog__footer {
+				padding-top: 0 !important;
+				.modal-footer {
+					background: transparent !important;
+				}
+			}
+		}
+	}
+}

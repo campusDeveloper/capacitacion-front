@@ -1,0 +1,9 @@
+
+
+.custom-scroll-bar {
+	&:hover {
+		>.track-scroll {
+			opacity: 1 !important;
+		}
+	}
+}

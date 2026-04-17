@@ -1,0 +1,28 @@
+.rating {
+	&:has([aria-valuenow="1"]),&:has([aria-valuenow="2"]),&:has([aria-valuenow="3"]),&:has([aria-valuenow="4"]),&:has([aria-valuenow="5"]){
+		.rate-us{
+			display: none;
+		}
+	}
+  }
+.el-rate{
+	--el-rate-icon-size: 15px;
+	&.fb-3{
+		.el-rate__text{
+			font-family: "Inter";
+			font-weight: 400;
+			font-size: 0.75rem;
+			line-height: 0.9rem;
+			letter-spacing: -0.04rem;
+			color: rgb(var(--xx-color-gray-600)) !important;
+		}
+	}
+	.el-icon{
+		font-size: var(--el-rate-icon-size) !important;
+	}
+	&.wo-margin {
+		.el-icon {
+			margin: 0 !important;
+		}
+	}
+}

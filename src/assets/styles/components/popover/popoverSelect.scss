@@ -1,0 +1,81 @@
+/* Popover para el select y para el time select */
+.el-popper.el-select__popper{
+	box-shadow: none !important;
+	border: none !important;
+	border-radius: 12px;
+	background-color: rgb(var(--xx-color-action-menu-surface)) !important;
+	&.z-index-over {
+		z-index: 3100 !important;
+	}
+	.el-select-dropdown{
+		background-color: rgb(var(--xx-color-action-menu-surface)) !important;
+		box-shadow: var(--xx-shadow-content) !important; /* variable drop shadow */
+		border-radius: 12px;
+		ul.el-select-dropdown__list{
+			padding: 10px;
+			li.el-select-dropdown__item{
+				padding: 0 14px;
+				font-family: 'GoogleSansFlex-Regular-24pt';
+				font-weight: 400;
+				margin-bottom: 2px;
+				@apply text-[rgb(var(--xx-color-text-primary))];
+				background-color: transparent !important;
+				border-radius: 8px;
+				&:hover{
+					background-color: rgb(var(--xx-color-action-list-hover)) !important; //--xx-surface-gray-secondary
+					border-radius: 8px;
+				}
+				&.is-selected{
+					background-color: rgb(var(--xx-color-action-list-hover)) !important;
+					border-radius: 8px;
+				}
+			}
+			.el-select-group__wrap{
+				padding-bottom: 12px;
+				li.el-select-group__title{
+					color: rgb(var(--xx-color-primary-900));
+					padding-left: 0px !important;
+					font-family: 'GoogleSansFlex-Regular-24pt';
+					font-weight: 600;
+					font-size: 12px;
+				}
+				&::after {
+					background-color: transparent !important;
+				}
+			}
+		}
+		.el-vl__wrapper{
+			border-radius: 12px;
+			overflow: hidden;
+			padding: 10px;
+			display: flex;
+			div.el-select-dropdown__list{
+				width: 100% !important;
+				div {
+					display: flex;
+					flex-direction: column;
+					gap: 10px;
+					li.el-select-dropdown__item{
+						padding: 0 14px;
+						font-family: 'GoogleSansFlex-Regular-24pt';
+						font-weight: 400;
+						margin-top: 4px !important;
+						color: rgb(var(--xx-actionlist-text-action));
+						background-color: transparent !important;
+						&:hover{
+							background-color: rgb(var(--xx-actionlist-background-select)) !important;
+							border-radius: 8px;
+						}
+						&.is-selected{
+							background-color: rgb(var(--xx-actionlist-background-select)) !important;
+							border-radius: 8px;
+						}
+					}
+				}
+			}
+		}
+		.el-select-dropdown__empty{
+			@apply text-[rgb(var(--xx-color-text-primary))];
+		}
+	}
+}

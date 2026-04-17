@@ -1,0 +1,185 @@
+
+.custom-cropper {
+	--height: 148px;
+	--width: 522px;
+	position: relative;
+	max-width: var(--width);
+	height: var(--height);
+	border: 2px dashed rgb(var(--xx-border-primary));
+	border-radius: 12px;
+	padding-left: 20px;
+	padding-top: 20px;
+	&:hover {
+		border: 2px dashed rgb(var(--xx-border-brand));
+
+		.slim {
+			background-color: rgb(var(--xx-surface-gray-secondary)) !important;
+		}
+	}
+
+	.text-cropper {
+		position: absolute;
+		left: 40%;
+		top: 51px;
+	}
+
+	.slim-banner{
+        .slim-result{
+            img {
+                height: 100%;
+                object-fit: contain;
+            }
+        }
+    }
+
+	.slim {
+		width: 100px;
+		height: 100px;
+		border-radius: 4px;
+		background-color: rgb(var(--xx-surface-gray-secondary));
+
+		.slim-file-hopper {
+			max-width: var(--width);
+			height: var(--height);
+			margin-left: -24px;
+			margin-top: -24px;
+			cursor: pointer;
+		}
+
+		.slim-area {
+			.slim-status {
+				.slim-label {
+					font-size: 0px;
+					margin-top: 12px;
+					&::before {
+						top: 0px !important;
+						left: 0px !important;
+						content: '\E81C' !important;
+						font-family: "fontello" !important;
+						font-size: 24px !important;
+						font-style: normal !important;
+					}
+				}
+				.slim-error {
+					font-size: 0px;
+					margin-top: 12px;
+					&::before {
+						top: 0px !important;
+						left: 0px !important;
+						content: '\E819' !important;
+						font-family: "fontello" !important;
+						font-size: 24px !important;
+						font-style: normal !important;
+					}
+					&::after {
+						top: 0px !important;
+						left: 0px !important;
+						content: 'Formato imagen invalido' !important;
+						line-height: 0.01rem;
+						font-size: 12px !important;
+						font-style: normal !important;
+					}
+				}
+			}
+		}
+
+		.slim-btn-group {
+			top: 8px !important;
+			left: 74px !important;
+
+			width: 48px !important;
+			height: 88px !important;
+			padding: 8px !important;
+			display: flex !important;
+			flex-direction: column;
+			row-gap: 8px !important;
+
+			.slim-btn {
+				width: 32px !important;
+				height: 32px !important;
+				background-color: rgb(var(--xx-button-secondary-background-default)) !important;
+				border: 1px solid rgb(var(--xx-button-secondary-border)) !important;
+				color: rgb(var(--xx-button-secondary-icon)) !important;
+				border-radius: 8px !important;
+				margin: 0px !important;
+				background-image: none !important;
+				opacity: 0;
+				cursor: pointer !important;
+				&:hover {
+					background-color: rgb(var(--xx-button-secondary-background-hover)) !important;
+				}
+				&::before {
+					border: none !important;
+					z-index: 1 !important;
+					opacity: 1;
+					transform: none !important;
+					right: 0px !important;
+					bottom: 0px !important;
+				}
+			}
+			.slim-btn-remove {
+				&::before {
+					top: 4px !important;
+					left: 0px !important;
+					content: '\E800' !important;
+					font-family: "fontello" !important;
+					font-size: 20px !important;
+					font-style: normal !important;
+				}
+			}
+			.slim-btn-edit {
+				&::before {
+					top: 4px !important;
+					left: 0px !important;
+					content: '\E81A' !important;
+					font-family: "fontello" !important;
+					font-size: 20px !important;
+					font-style: normal !important;
+				}
+			}
+		}
+	}
+
+}
+
+.custom-slim-drag {
+	.cropper-drag {
+		--height: 66px;
+		--width: 100%;
+		div.slim {
+			background-color: transparent;
+			border-radius: 8px;
+			height: var(--height);
+			width: var(--width);
+			&:hover {
+				background-color: transparent;
+			}
+			.slim-file-hopper {
+				height: var(--height);
+				width: var(--width);
+			}
+			.slim-btn-group {
+				display: none;
+			}
+			.slim-area {
+				display: none;
+			}
+		}
+	}
+	&:has([data-state="empty,error"]){
+		.invalid-format {
+			display: block !important;
+		}
+	}
+	&.custom-bg {
+		&:has([data-state="empty,error"]){
+			background-color: #FCC0B3;
+		}
+		.slim {
+			background-color: transparent !important;
+		}
+	}
+	&:has([data-state="empty,file-over"]){
+		background-color: #b9dff9 !important;
+	}
+}

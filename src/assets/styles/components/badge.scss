@@ -1,0 +1,12 @@
+.custom-badge {
+	.el-badge__content {
+		background-color: rgb(var(--xx-color-red-semantic-500));
+		border: none;
+		padding: 0 4px;
+		transform: translateY(-35%) translateX(100%) !important;
+		border-radius: 4px !important;
+		font-family: "GoogleSansFlex-Medium";
+		font-weight: 500;
+		font-size: 11px;
+	}
+}

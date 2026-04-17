@@ -1,0 +1,38 @@
+.el-input.el-date-editor--time{
+    .el-input__wrapper{
+		box-shadow: none;
+		outline-width: 1px;
+		outline-style: solid;
+		outline-color: rgb(var(--xx-color-border-light-primary));
+        background-color: rgb(var(--xx-color-action-menu-surface)) !important;
+		outline-offset: -2px;
+		padding: 1px 14px;
+		&:hover{
+			outline-width: 1px;
+			outline-style: solid;
+			outline-color: rgb(var(--xx-color-white-700));
+			outline-offset: -2px;
+		}
+		input::placeholder{
+			font-style: italic;
+		}
+        input {
+            color: rgb(var(--xx-color-text-secondary)) !important;
+        }
+        .is-focus {
+            outline-color: rgb(var(--xx-color-border-brand)) !important;
+        }
+	}
+    &[aria-expanded="true"]{
+		.el-input__wrapper{
+			outline-width: 1px;
+			outline-style: solid;
+			outline-color: rgb(var(--xx-color-border-brand)) !important;
+			outline-offset: -2px;
+			box-shadow: none;
+            input {
+                color: rgb(var(--xx-color-text-secondary)) !important;
+            }
+		}
+	}
+}

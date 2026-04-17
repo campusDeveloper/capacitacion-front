@@ -1,0 +1,19 @@
+.leaflet-tooltip {
+	&.zona-tooltip {
+		width: 180px;
+		padding: 10px;
+		background-color: rgb(var(--xx-color-black-500));
+		border-color: rgb(var(--xx-color-black-500));
+		&::before {
+			border-top-color: rgb(var(--xx-color-black-500));
+		}
+	}
+}
+.custom-tooltip{
+	&-width {
+		width: 200px;
+	}
+	&-bg-dark {
+		background-color: rgb(var(--xx-color-black-500)) !important;
+	}
+}

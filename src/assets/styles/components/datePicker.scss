@@ -1,0 +1,157 @@
+.el-date-editor--daterange {
+	&[aria-expanded = 'true'] {
+		box-shadow: 0 0 0 2px var(--general) inset !important
+	}
+}
+
+
+// input datepicker.
+.el-input.el-date-editor--date{
+	.el-input__wrapper{
+		box-shadow: none;
+		outline-width: 1px;
+		outline-style: solid;
+		outline-color: rgb(var(--xx-color-border-light-primary));
+		outline-offset: -2px;
+		padding: 1px 14px;
+		&:hover{
+			outline-width: 1px;
+			outline-style: solid;
+			outline-color: rgb(var(--xx-color-white-700));
+			outline-offset: -2px;
+		}
+	}
+	&[aria-expanded="true"]{
+		.el-input__wrapper{
+			outline-width: 1px;
+			outline-style: solid;
+			outline-color: rgb(var(--xx-color-border-brand)) !important;
+			outline-offset: -2px;
+			box-shadow: none;
+		}
+	}
+	&.el-input--prefix{
+		&.w-full{
+			width: 100%;
+		}
+	}
+	.el-input__inner::placeholder{
+		font-style: italic;
+	}
+	&.unborder{
+		.el-input__wrapper{
+			outline-color: transparent;
+			background-color: transparent !important;
+			&:hover{
+				outline-color: rgb(var(--xx-input-border-hover));
+			}
+		}
+	}
+}
+
+// input datepicker range.
+.el-date-editor.el-date-editor{
+    .el-input__wrapper{
+		box-shadow: none;
+		outline-width: 1px;
+		outline-style: solid;
+		outline-color: rgb(var(--xx-color-border-secondary));
+		outline-offset: -2px;
+		padding: 1px 14px;
+	}
+	&--daterange{
+		box-shadow: none !important;
+		outline-width: 1px;
+		outline-style: solid;
+		outline-color: rgb(var(--xx-color-border-light-primary));
+		outline-offset: -1px;
+		border-radius: 8px !important;
+		padding: 1px 14px !important;
+		&:hover{
+			outline-width: 1px;
+			outline-style: solid;
+			outline-color: rgb(var(--xx-color-white-700));
+			outline-offset: -1px;
+		}
+		&[aria-expanded="true"]{
+			outline-width: 1px;
+			outline-style: solid;
+			outline-color: rgb(var(--xx-color-border-brand));
+			outline-offset: -1px;
+			box-shadow: none;
+		}
+        .el-range-input{
+            background-color: rgb(var(--xx-color-action-menu-surface)) !important;
+            .el-range-separator {
+                color: rgb(var(--xx-color-text-primary))
+            }
+            color: rgb(var(--xx-color-text-primary))
+        }
+        .el-range-separator {
+            color: rgb(var(--xx-color-text-primary))
+        }
+		.el-icon {
+			color: rgb(var(--xx-color-black-200));
+		}
+	}
+	&.el-range-editor{
+		&--large {
+			min-height: 44px !important;
+			max-height: 44px !important;
+			font-size: 14px !important;
+		}
+		min-height: 36px;
+		&--small{
+			min-height: 34px !important;
+		}
+	}
+	&.unborder{
+		outline-color: transparent;
+		background-color: transparent !important;
+		&:hover{
+			outline-color: rgb(var(--xx-input-border-hover));
+		}
+	}
+}
+
+.date-select{
+	&.calendar{
+		min-width: 170px !important;
+		&[aria-expanded="true"]{
+			.el-input__wrapper{
+				// @apply bg-grey-alpha cursor-pointer;
+				.el-input__prefix{
+					.el-input__prefix-inner{
+						i{
+							@apply rotate-[-180deg];
+						}
+					}
+				}
+			}
+		}
+	}
+	.el-input__wrapper{
+		box-shadow: none !important;
+		min-width: 100% !important;
+		cursor: pointer !important;
+		@apply flex-row-reverse gap-x-4;
+		&.is-focus {
+			box-shadow: none !important;
+		}
+		.el-input__prefix{
+			.el-input__prefix-inner{
+				i{
+
+				}
+			}
+		}
+		input{
+			cursor: pointer;
+			min-width: 110px;
+			@apply text-center;
+			&.el-input__inner::placeholder{
+
+			}
+		}
+	}
+}

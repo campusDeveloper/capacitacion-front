@@ -1,0 +1,239 @@
+/* Clases para el select y el time select  */
+.el-select {
+    --min-h: 36px;
+    --padding_wrapper: 1px 14px;
+    --border-radius: 8px;
+    &--large {
+        .el-select__wrapper {
+            min-height: 44px !important;
+            font-size: 14px !important;
+            .el-input__icon {
+                font-size: 16px !important;
+            }
+        }
+    }
+    &--small {
+        .el-select__wrapper {
+            min-height: 28px !important;
+            .el-select__prefix {
+                margin-right: 3px !important;
+            }
+        }
+    }
+    .el-select__wrapper {
+        transition: none;
+        box-shadow: none !important;
+        outline-width: 1px;
+        outline-style: solid;
+        outline-color: rgb(var(--xx-color-border-light-primary));
+        outline-offset: -1px;
+        border-radius: var(--border-radius) !important;
+        background-color: rgb(var(--xx-color-action-menu-surface)) !important;
+        min-height: var(--min-h);
+        padding: var(--padding_wrapper) !important;
+        &:hover {
+            outline-width: 1px;
+            outline-style: solid;
+            outline-color: rgb(var(--xx-color-white-700));
+            outline-offset: -1px;
+        }
+        &[aria-describedby] {
+            outline-width: 1px;
+            outline-style: solid;
+            outline-color: rgb(var(--xx-color-border-brand));
+            outline-offset: -1px;
+            .el-select__selected-item {
+                span {
+                    @apply text-[rgb(var(--xx-color-text-primary))];
+                }
+            }
+        }
+        &.is-disabled {
+            @apply outline-[rgb(var(--xx-color-surface-secondary))];
+            @apply bg-[rgb(var(--xx-color-surface-primary))];
+            .el-select__suffix {
+                i {
+                    color: rgb(var(--xx-color-gray-300));
+                }
+            }
+            .el-select__placeholder {
+                color: rgb(var(--xx-color-gray-300)) !important;
+            }
+        }
+        .el-select__suffix {
+            i {
+                font-size: 20px;
+            }
+        }
+        i {
+            color: rgb(var(--xx-color-black-200));
+        }
+        .el-select__selected-item {
+            &:not(.is-transparent) {
+                color: rgb(var(--xx-color-text-primary));
+                font-family: "GoogleSansFlex-Regular";
+                font-weight: 400;
+                font-size: 16px;
+            }
+            &.is-transparent {
+                font-family: "GoogleSansFlex-Regular";
+                font-weight: 400;
+                color: rgb(var(--xx-color-text-tertiary));
+                font-size: 16px;
+            }
+        }
+        .el-select__input {
+            color: rgb(var(--xx-input-text-value));
+        }
+        .el-select__selection {
+            padding: 5px 0;
+            .el-select__selected-item {
+                span.el-tag {
+                    display: flex;
+                    border-radius: 999px;
+                    height: 24px;
+                    background-color: rgb(var(--xx-color-action-list-hover)) !important;
+                    color: rgb(var(--xx-color-primary-900));
+                    border: 1px solid transparent;
+                    i {
+                        color: rgb(var(--xx-color-primary-900));
+                        height: 16px;
+                        width: 16px;
+                        font-size: 12px;
+                        &:hover {
+                            background-color: rgb(var(--xx-color-white-600));
+                        }
+                    }
+                }
+            }
+        }
+        .is-near {
+            .el-select__selected-item {
+                .el-tag {
+                    border: 1px solid rgb(var(--xx-border-secondary));
+                    border-radius: 100px;
+                    background-color: rgb(var(--xx-surface-gray-secondary));
+                    .el-tag__close {
+                        width: 16px;
+                        height: 16px;
+                        color: rgb(var(--xx-color-gray-900));
+                        &::before {
+                            content: "\E826";
+                            font-family: "fontello";
+                            font-size: 16px;
+                            font-style: normal;
+                        }
+                        &:hover {
+                            background-color: rgb(var(--xx-color-gray-300));
+                        }
+                        svg {
+                            display: none;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    &.unborder {
+        .el-select__wrapper {
+            outline-color: transparent;
+            background-color: transparent;
+            &:hover {
+                outline-color: rgb(var(--xx-input-border-hover));
+            }
+            &[aria-describedby] {
+                outline-color: rgb(var(--xx-input-border-focus));
+            }
+        }
+    }
+	&.empty {
+        .el-select__wrapper {
+            outline-color: transparent;
+            background-color: transparent !important;
+            &:hover {
+                outline-color: transparent;
+            }
+            &[aria-describedby] {
+                outline-color: transparent;
+            }
+        }
+    }
+    &.custom-select {
+        --color-bg: transparent;
+        --color-content-dark: rgb(var(--xx-color-text-secondary));
+        --color-content-light: rgb(var(--xx-color-mid-gray-300));
+        .el-select__wrapper {
+            outline-color: transparent;
+            background-color: var(--color-bg) !important;
+            &:hover {
+                // outline-color: transparent;
+            }
+            &[aria-describedby] {
+                .el-select__selected-item {
+                    span {
+                        @apply text-[var(--xx-color-text-primary)];
+                    }
+                }
+            }
+            .el-select__selected-item {
+                font-family: "GoogleSansFlex-Regular";
+                font-weight: 400;
+                font-size: 14px;
+                @apply text-[var(--color-content-light)];
+            }
+        }
+        .el-select__suffix {
+			i {
+				&:not(:has(path[d="M831.872 340.864 512 652.672 192.128 340.864a30.592 30.592 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.592 30.592 0 0 0-42.752 0z"])) {
+					&::before {
+						content: '\E80F' !important;
+						font-family: "fontello";
+						font-size: 20px;
+						font-style: normal !important;
+                        @apply text-[var(--color-content-light)];
+					}
+				}
+				&:has(path[d="M831.872 340.864 512 652.672 192.128 340.864a30.59 30.59 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.59 30.59 0 0 0-42.752 0z"]){
+					svg {
+						display: none;
+					}
+				}
+			}
+		}
+        &-outline {
+            .el-select__wrapper{
+                outline-color: var(--color-bg);
+                background-color: transparent !important;
+                .el-select__selected-item {
+                    font-family: "GoogleSansFlex-Regular";
+                    font-weight: 400;
+                    font-size: 14px;
+                    @apply text-[var(--xx-color-text-primary)];
+                }
+            }
+			.el-select__suffix {
+				i {
+					&:not(:has(path[d="M831.872 340.864 512 652.672 192.128 340.864a30.592 30.592 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.592 30.592 0 0 0-42.752 0z"])) {
+						&::before {
+							content: '\E80F' !important;
+							font-family: "fontello";
+							font-size: 20px;
+							font-style: normal !important;
+							@apply text-[var(--xx-color-text-primary)];
+						}
+					}
+					&:has(path[d="M831.872 340.864 512 652.672 192.128 340.864a30.59 30.59 0 0 0-42.752 0 29.12 29.12 0 0 0 0 41.6L489.664 714.24a32 32 0 0 0 44.672 0l340.288-331.712a29.12 29.12 0 0 0 0-41.728 30.59 30.59 0 0 0-42.752 0z"]){
+						svg {
+							display: none;
+						}
+					}
+				}
+			}
+        }
+    }
+    &.rounded-full {
+        .el-select__wrapper {
+            border-radius: 50rem !important;
+        }
+    }
+}

@@ -1,0 +1,56 @@
+.el-popper.el-picker__popper{
+    &:has(.el-time-panel){
+        display: flex;
+        justify-content: center;
+        min-width: 240px;
+        border: none;
+        box-shadow: var(--xx-shadow-content) !important; /* variable drop shadow */
+		background-color: rgb(var(--xx-color-action-menu-surface)) !important;
+		padding: 8px;
+		border-radius: 12px !important;
+    }
+
+    .el-time-panel{
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        .el-time-panel__content{
+            li.is-active{
+                color: rgb(var(--xx-timepicker-text-select)) !important;
+                font-family: "GoogleSansFlex-Regular";
+				font-weight: 800 !important;
+            }
+            li.el-time-spinner__item{
+                @apply text-[rgb(var(--xx-color-text-primary))];
+				font-family: "GoogleSansFlex-Regular";
+				font-weight: 500;
+				background-color: transparent;
+            }
+        }
+        .el-time-panel__footer{
+            display: flex;
+            justify-content: center;
+            border: none;
+            button:first-child{
+                border: 1px solid rgb(var(--xx-button-secondary-border));
+                font-size: 13px;
+                color: rgb(var(--xx-color-text-primary));
+                background-color: rgb(var(--xx-button-secondary-background-default));
+            }
+            button:last-child{
+                @apply text-[rgb(var(--xx-color-text-primary))];
+                background-color: rgb(var(--xx-button-primary-background-default)) !important;
+            }
+            button{
+                border-radius: 6px;
+                height: 24px;
+                display: flex;
+                align-items: center;
+                &:hover{
+                    background-color: rgb(var(--xx-color-button-primary-hover)) !important;
+                    color: rgb(var(--xx-color-white-200)) !important;
+                }
+            }
+        }
+    }
+}

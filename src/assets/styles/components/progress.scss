@@ -1,0 +1,15 @@
+.full-progress{
+	&.el-progress{
+		&.el-progress--line{
+			.el-progress-bar{
+				.el-progress-bar__outer{
+					@apply bg-white-50;
+					.el-progress-bar__inner{
+						@apply bg-green-s-400;
+						border-radius: 0 !important;
+					}
+				}
+			}
+		}
+	}
+}

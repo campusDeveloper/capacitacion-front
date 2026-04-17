@@ -1,0 +1,47 @@
+
+.border-primary {
+	border-color: rgb(var(--xx-color-blue-1000));
+}
+.border-secondary {
+	border-color: rgb(var(--xx-color-gray-400));
+}
+.border-brand {
+	border-color: rgb(var(--xx-color-brand-500));
+}
+.border-invalid {
+	border-color: rgb(var(--xx-color-red-500));
+}
+.border-shadow {
+	border-color: rgb(var(--xx-border-shadow));
+}
+
+.text-primary {
+	color: rgb(var(--xx-color-blue-1000));
+}
+.text-brown {
+	color: rgb(var(--xx-color-brown-500));
+}
+.text-tertiary {
+	color: rgb(var(--xx-color-black-200));
+}
+.text-secondary {
+	color: rgb(var(--xx-color-black-400));
+}
+.text-disable {
+	color: rgb(var(--xx-color-gray-400));
+}
+.text-reversed {
+	color: rgb(var(--xx-color-gray-50));
+}
+.text-destructive {
+	color: rgb(var(--xx-color-red-500));
+}
+.text-brand {
+	color: rgb(var(--xx-color-brand-600));
+}
+.text-link {
+	color: rgb(var(--xx-color-blue-500));
+}
+.text-label {
+	color: rgb(var(--xx-input-text-label));
+}

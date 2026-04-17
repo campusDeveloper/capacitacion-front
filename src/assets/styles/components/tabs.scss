@@ -1,0 +1,126 @@
+.el-tabs__header{
+    margin-bottom: 0px !important;
+}
+
+@mixin tabs-link {
+	font-size: 16px;
+	color: rgb(var(--xx-color-black-200));
+	transition: all .2s;
+}
+
+.tabs-link-bottom{
+	width: fit-content;
+	display: flex;
+	align-items: center;
+	position: relative;
+	a {
+		@include tabs-link;
+		transition: all ease-in-out .2s;
+	}
+	a.router-link-active.router-link-exact-active, a.router-link-active, .selected{
+		position: relative;
+		.each-menu{
+			color: rgb(var(--xx-color-primary-900));
+			background-color: rgb(var(--xx-color-green-semantic-50));
+		}
+		&::after{
+			content: "";
+			position: absolute;
+			bottom: -7px;
+			z-index: 3;
+			left: 0;
+			width: 100%;
+			height: 4px;
+			background: rgb(var(--xx-color-brand-500));
+			border-radius: 4px !important;
+		}
+	}
+	.each-menu {
+		border-radius: 8px;
+		min-height: 30px;
+		color: rgb(var(--xx-color-mid-gray-600));
+		display: flex;
+		align-items: center;
+		padding: 0 23px;
+		@apply f-tm-16;
+		&:not(.selected) {
+			&:hover {
+				background-color: rgb(var(--xx-color-mid-gray-50));
+			}
+		}
+	}
+	&:not(a){
+		@include tabs-link;
+		height: 44px;
+		display: flex;
+		align-items: center;
+		cursor: default;
+		&.selected {
+			border-bottom: 2px solid rgb(var(--xx-color-blue-700)) !important;
+			color: rgb(var(--xx-color-blue-1000));
+		}
+		&:not(.selected){
+			cursor: pointer;
+		}
+	}
+	&::after {
+		content: "";
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		width: 100%;
+		height: 4px;
+		background: rgb(var(--xx-color-light-gray-100));
+		border-radius: 4px;
+	}
+}
+
+.el-tabs{
+	.el-tabs__item{
+		padding: 0px 10px !important;
+		color: rgb(var(--xx-color-black-200));
+		&.is-active{
+			border-bottom: 1px solid rgb(var(--xx-color-blue-1000)) !important;
+		}
+	}
+	&.tab-px-6{
+		.el-tabs__nav-scroll{
+			padding-left: 1.5rem;
+			padding-right: 1.5rem;
+		}
+	}
+	&.tab-p-2{
+		.el-tabs__item{
+			padding: 0 2px;
+		}
+	}
+	&.with-hover{
+		.el-tabs__item{
+			position: relative;
+			transition: all ease-in-out;
+			background-color: var(--xx-color-blue-700);
+			&:hover{
+				&::before{
+					content: '';
+					width: 100%;
+					height: 2px;
+					background-color: var(--xx-color-blue-700);
+					position: absolute;
+					bottom: 0;
+				}
+			}
+		}
+	}
+	&.wo-border{
+		.el-tabs__nav-wrap{
+			&::after{
+				background-color: transparent;
+			}
+		}
+	}
+	&.nav-ps-8{
+		.el-tabs__nav-wrap{
+			padding-left: 80px;
+		}
+	}
+}

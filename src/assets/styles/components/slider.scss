@@ -1,0 +1,20 @@
+.el-slider{
+	.el-slider__runway{
+		background-color: rgb(var(--xx-slider-background));
+		.el-slider__button-wrapper{
+			.el-slider__button{
+				background-color: rgb(var(--xx-slider-dots));
+				height: 16px;
+				width: 16px;
+				&.hover{
+					transform: scale(1);
+					width: 20px;
+					height: 20px;
+				}
+			}
+		}
+		.el-slider__bar{
+			background-color: rgb(var(--xx-slider-range));
+		}
+	}
+}

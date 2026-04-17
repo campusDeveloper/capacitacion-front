@@ -1,0 +1,134 @@
+.el-collapse{
+	&.h-24px{
+		.el-collapse-item__header{
+			height: 24px;
+		}
+	}
+	&.h-40px{
+		.el-collapse-item__header{
+			height: 40px;
+		}
+	}
+	&.h-48px{
+		.el-collapse-item__header{
+			height: 48px;
+		}
+	}
+	&.h-99px{
+		.el-collapse-item__header{
+			height: 99px;
+		}
+	}
+	&.woBorder{
+		border: none !important;
+		.el-collapse-item__header, .el-collapse-item__wrap{
+			border: none !important;
+		}
+	}
+	&.transparent{
+		.el-collapse-item__header, .el-collapse-item__wrap{
+			background-color: transparent !important;
+		}
+	}
+	&.pb-0{
+		.el-collapse-item__content{
+			padding-bottom: 0px !important;
+		}
+	}
+	&.px-4{
+		.el-collapse-item__header{
+			padding: 0px 20px !important;
+		}
+	}
+	&.pe-4{
+		.el-collapse-item__header{
+			padding-right: 16px !important;
+		}
+	}
+	&.header-w-auto{
+		.el-collapse-item__header{
+			width: auto !important;
+		}
+	}
+	&.header-none{
+		.el-collapse-item__header{
+			height: 0px;
+			i{
+				display: none !important;
+			}
+		}
+	}
+	&.h-fit {
+		.el-collapse-item__header{
+			height: fit-content;
+		}
+	}
+	&.w-shadow-content {
+		.el-collapse-item__header{
+			box-shadow: 0px 1px 2px 0px #0000001F !important;
+		}
+	}
+	&.br-8{
+		.el-collapse-item__header{
+			@apply rounded-lg;
+		}
+	}
+	&.br-12{
+		.el-collapse-item__header{
+			@apply rounded-xl;
+		}
+	}
+	&.bg-white{
+		.el-collapse-item__header{
+			background-color: #fff !important;
+		}
+	}
+	&.mh-68{
+		.el-collapse-item__header{
+			min-height: 68px !important;
+		}
+	}
+}
+
+.custom-collapse {
+	&.el-collapse {
+		.el-collapse-item {
+			&.is-disabled {
+				.el-collapse-item__header {
+					border: none !important;
+					.el-collapse-item__arrow {
+						display: none !important;
+					}
+					@apply text-primary cursor-auto;
+				}
+			}
+		}
+	}
+}
+
+.favorites-vacants{
+	.el-collapse-item.is-active{
+		@apply border border-brand-300 rounded-xl;
+		.el-collapse-item__header.is-active{
+			border-bottom: 1px solid #65e5cd !important;
+		}
+		.el-collapse-item__wrap{
+			@apply rounded-b-2xl;
+		}
+	}
+	.el-collapse-item__header{
+		@apply relative;
+		.el-collapse-item__arrow{
+			@apply size-6 rounded absolute right-0 top-[13px] hover:bg-white-300;
+		}
+	}
+	.el-collapse-item__header.is-active{
+		border-radius: 12px 12px 0px 0px !important;
+		border-bottom: 1px solid #eaeded !important;
+	}
+	.el-collapse-item__content{
+		background-color: transparent !important;
+		border-radius:  0px 0px 12px 12px;
+		box-shadow: var(--xx-shadow-content) !important;
+	}
+}

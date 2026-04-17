@@ -1,0 +1,182 @@
+/* ----> Fuentes 120pt <---- */
+
+@font-face {
+	font-family: "GoogleSansFlex-Regular";
+	font-weight: 400;
+	src: url("/fonts/static/GoogleSansFlex_120pt-Regular.ttf") format("truetype");
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "GoogleSansFlex";
+	font-weight: 700;
+	src: url("/fonts/static/GoogleSansFlex_120pt-Bold.ttf") format("truetype");
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "GoogleSansFlex-SemiBold";
+	font-weight: 600;
+	src: url("/fonts/static/GoogleSansFlex_120pt-SemiBold.ttf") format("truetype");
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "GoogleSansFlex-Medium";
+	font-weight: 500;
+	src: url("/fonts/static/GoogleSansFlex_120pt-Medium.ttf") format("truetype");
+	font-display: swap;
+}
+
+/* ----> Fuentes 24pt <---- */
+
+@font-face {
+	font-family: "GoogleSansFlex-ExtraBold-24pt";
+	font-weight: 800;
+	src: url("/fonts/static/GoogleSansFlex_24pt-ExtraBold.ttf") format("truetype");
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "GoogleSansFlex-Bold-24pt";
+	font-weight: 700;
+	src: url("/fonts/static/GoogleSansFlex_24pt-Bold.ttf") format("truetype");
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "GoogleSansFlex-SemiBold-24pt";
+	font-weight: 600;
+	src: url("/fonts/static/GoogleSansFlex_24pt-SemiBold.ttf") format("truetype");
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "GoogleSansFlex-Medium-24pt";
+	font-weight: 500;
+	src: url("/fonts/static/GoogleSansFlex_24pt-Medium.ttf") format("truetype");
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "GoogleSansFlex-Regular-24pt";
+	font-weight: 400;
+	src: url("/fonts/static/GoogleSansFlex_24pt-Regular.ttf") format("truetype");
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "GoogleSansFlex-Light-24pt";
+	font-weight: 300;
+	src: url("/fonts/static/GoogleSansFlex_24pt-Light.ttf") format("truetype");
+	font-display: swap;
+}
+
+.f-regular {
+	font-family: "GoogleSansFlex-Regular";
+	font-weight: 400;
+	font-size: 16px;
+	line-height: 150%;
+}
+
+.f-medium {
+	font-family: "GoogleSansFlex-Medium";
+	font-weight: 500;
+	font-size: 16px;
+	line-height: 150%;
+}
+
+.f-semibold {
+	font-family: "GoogleSansFlex-SemiBold";
+	font-weight: 600;
+	font-size: 16px;
+	line-height: 150%;
+}
+
+.f-hxxl {
+	font-family: "GoogleSansFlex";
+	font-weight: 700;
+	font-size: 56px;
+	line-height: 150%;
+}
+
+.f-hxl {
+	font-family: "GoogleSansFlex";
+	font-weight: 700;
+	font-size: 48px;
+	line-height: 120%;
+}
+
+.f-hl {
+	font-family: "GoogleSansFlex";
+	font-weight: 700;
+	font-size: 40px;
+	line-height: 120%;
+}
+
+.f-hm {
+	font-family: "GoogleSansFlex-Medium";
+	font-weight: 500;
+	font-size: 32px;
+	line-height: 120%;
+}
+
+.f-hs {
+	font-family: "GoogleSansFlex";
+	font-weight: 700;
+	font-size: 24px;
+	line-height: 140%;
+}
+
+.f-hxs {
+	font-family: "GoogleSansFlex-SemiBold";
+	font-weight: 600;
+	font-size: 20px;
+	line-height: 140%;
+}
+
+@for $i from 10 through 20 {
+	.f-tx-#{$i} {
+		font-family: "GoogleSansFlex-ExtraBold-24pt";
+		font-weight: 800;
+		font-size: $i+px;
+		line-height: 150%;
+	}
+	.f-tb-#{$i} {
+		font-family: "GoogleSansFlex-Bold-24pt";
+		font-weight: 700;
+		font-size: $i+px;
+		line-height: 150%;
+	}
+	.f-ts-#{$i} {
+		font-family: "GoogleSansFlex-SemiBold-24pt";
+		font-weight: 600;
+		font-size: $i+px;
+		line-height: 150%;
+	}
+	.f-tm-#{$i} {
+		font-family: "GoogleSansFlex-Medium-24pt";
+		font-weight: 500;
+		font-size: $i+px;
+		line-height: 150%;
+	}
+	.f-t-#{$i} {
+		font-family: "GoogleSansFlex-Regular-24pt";
+		font-weight: 400;
+		font-size: $i+px;
+		line-height: 150%;
+	}
+	.f-tl-#{$i} {
+		font-family: "GoogleSansFlex-Light-24pt";
+		font-weight: 300;
+		font-size: $i+px;
+		line-height: 150%;
+	}
+	.f-tlink-#{$i} {
+		font-family: "GoogleSansFlex-Medium-24pt";
+		font-weight: 500;
+		font-size: $i+px;
+		line-height: 150%;
+		text-decoration: underline;
+	}
+}

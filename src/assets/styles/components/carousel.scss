@@ -1,0 +1,14 @@
+.el-carousel{
+    &.indicator-dot{
+        .el-carousel__indicator{
+            .el-carousel__button{
+                @apply size-2 rounded-full;
+            }
+            &.is-active{
+                button{
+                    @apply bg-brand;
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,26 @@
+.el-popper.el-dropdown__popper{
+    border-color: rgb(var(--xx-color-action-menu-surface)) !important;
+    .el-dropdown__list {
+        background-color: rgb(var(--xx-color-action-menu-surface)) !important;
+        border-radius: 6px;
+    }
+	.el-dropdown-menu{
+		background-color: rgb(var(--xx-color-action-menu-surface)) !important;
+        border-radius: 8px;
+		&__item{
+			background-color: transparent !important;
+            @apply text-[rgb(var(--xx-color-text-primary))];
+			&:hover{
+                @apply text-[rgb(var(--xx-color-text-primary))];
+				background-color: rgb(var(--xx-color-action-list-hover)) !important;
+			}
+			&:has(.text-danger){
+				color: rgb(var(--xx-color-secondary-500)) !important;
+			}
+            outline: none !important;
+		}
+	}
+	&.z-index-over {
+		z-index: 3100 !important;
+	}
+}

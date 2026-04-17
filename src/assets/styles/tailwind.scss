@@ -1,0 +1,17 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import '../fontello/css/fontello.css';
+
+@layer base {
+	@import './variables/index.scss';
+	@import './base.scss';
+}
+
+@import './components/index.scss';
+
+@layer utilities {
+	@import './utilities.scss';
+}

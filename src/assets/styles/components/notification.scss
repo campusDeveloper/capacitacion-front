@@ -1,0 +1,44 @@
+.el-notification {
+	z-index: 10000 !important;
+	&:has(.el-notification--success){
+		background-color: rgb(var(--xx-color-green-semantic-50));
+		i {
+			color: rgb(var(--xx-color-green-semantic-200));
+		}
+	}
+	&:has(.el-notification--info){
+		background-color: rgb(var(--xx-color-blue-semantic-50));
+		i {
+			color: rgb(var(--xx-color-blue-semantic-200));
+		}
+	}
+	&:has(.el-notification--warning){
+		background-color: rgb(var(--xx-color-yellow-semantic-50));
+		i {
+			color: rgb(var(--xx-color-yellow-semantic-600));
+		}
+	}
+	&:has(.el-notification--error){
+		background-color: rgb(var(--xx-color-red-semantic-50));
+		i {
+			color: rgb(var(--xx-color-red-semantic-300));
+		}
+	}
+	.el-notification__group{
+		h2 {
+			color: rgb(var(--xx-color-black-400));
+			font-family: 'GoogleSansFlex-SemiBold';
+			font-weight: 600;
+		}
+		.el-notification__content {
+			p {
+				color: rgb(var(--xx-color-black-400)) !important;
+				font-family: 'GoogleSansFlex-Regular';
+				font-weight: 400;
+			}
+		}
+		.el-notification__closeBtn{
+			color: rgb(var(--xx-color-gray-800)) !important;
+		}
+	}
+}

@@ -1,0 +1,29 @@
+.el-pagination{
+	ul {
+		gap: 4px;
+		li{
+			font-size: 1rem;
+			min-width: 27px !important;
+			height: 36px;
+			width: 30px;
+			border-radius: 8px;
+			padding: 0;
+			color: rgb(var(--xx-color-blue-1000)) !important;
+			&.is-active {
+				color: rgb(var(--xx-color-gray-constants-white)) !important;
+				font-family: 'Sora-Medium';
+				background-color: rgb(var(--xx-color-blue-900)) !important;
+				&:hover {
+					background-color: rgb(var(--xx-color-blue-700)) !important;
+				}
+			}
+			&:not(.is-active){
+				color: rgb(var(--xx-text-tertiary));
+				font-family: 'Sora-Medium';
+			}
+			&:hover{
+				background-color: rgb(var(--xx-surface-gray-tertiary)) !important;
+			}
+		}
+	}
+}
