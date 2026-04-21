@@ -39,7 +39,7 @@
 						<Error server="root" :local="errorMessage" v-bind="field" />
 					</div>
 				</Field>
-				<Button class="w-full" type="submit" size="large">Iniciar sesión</Button>
+				<Button class="w-full" type="submit" size="large" :loading="loading">Iniciar sesión</Button>
 			</Form>
 			<img src="/img/generals/shape-group.svg" alt=""
 				class="absolute animate-shape w-[280px] h-[287px] bottom-[-85px] left-[-110px]">
@@ -55,30 +55,32 @@ import { onBeforeMount, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia'
 import { useErrors } from '../../../shared/store/errors'
+import { useAuthStore } from '../store/auth.store'
 
-//Constantes
 const model = ref({
 	email: '',
 	password: ''
 })
 const router = useRouter()
-const { hasErrors } = storeToRefs(useErrors())
+const { hasErrors, errors } = storeToRefs(useErrors())
 const refModalResetPassword = ref()
 const passwordSent = ref(false)
+const loading = ref(false)
+const authStore = useAuthStore()
 
-/* Functions
-async function onLogin() {
-	router.push({ name: 'configuration' })
-}
-*/
 async function login() {
+	errors.value = {}
+	loading.value = true
 	try {
-
-		router.push({ name: 'dashboard' });
-
+		await authStore.login({
+			email: model.value.email,
+			password: model.value.password
+		})
+		router.push({ name: 'dashboard' })
 	} catch (error) {
-		console.error(error);
-		// mostrar error al usuario (toast / alert)
+		console.error(error)
+	} finally {
+		loading.value = false
 	}
 }
 

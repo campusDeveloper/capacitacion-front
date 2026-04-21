@@ -40,6 +40,7 @@ export async function request(fn, notify) {
 			e.response?.data?.title ??
 			"Error!";
 		const message =
+			e.response?.data?.errors?.root?.[0] ??
 			e?.error?.message ??
 			e.response?.data?.message ??
 			e.response?.data?.error ??
@@ -49,12 +50,12 @@ export async function request(fn, notify) {
 			Object.values(e?.errors)?.[0]?.[0];
 
 		const method = e.response?.config?.method || "unknown";
+		const status = e.response?.status;
 
 		const notifyConfig = parseNotify(notify);
 
-		// Notificación de error
 		if (notifyConfig.error && method !== "get") {
-			if (e.response?.status == 422) {
+			if (status == 422) {
 				ElNotification({
 					title: title,
 					message: e.response?.data?.error,

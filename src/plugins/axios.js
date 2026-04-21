@@ -7,21 +7,20 @@ axios.defaults.baseURL =  import.meta.env.VITE_BASE_URL;
 axios.defaults.withCredentials = true
 
 axios.interceptors.request.use(request => {
-    // const token = Cookies.get('token');
-    // if (token && request.url.indexOf('s3.amazonaws.com') === -1) request.headers.Authorization = `Bearer ${token}`
+    const token = Cookies.get('token');
+    if (token && request.url.indexOf('s3.amazonaws.com') === -1) request.headers.Authorization = `Bearer ${token}`
     return request
 })
 
 axios.interceptors.response.use(response => response, error => {
-    const { status, data } = error.response
+    const { status } = error.response
     if (status >= 500) console.error(error)
-    if (status === 400) throw data
     if (status === 401){
-        // setUserFailure()
-        // location.href = "login"
+        Cookies.remove('token')
         router.push({ name: 'login' })
     }
     if (status === 403){
+        Cookies.remove('token')
         router.push({ name: 'login' });
     }
     return Promise.reject(error)
