@@ -18,7 +18,7 @@ export async function request(fn, notify) {
 	try {
 		const response = await fn();
 		data = response.data;
-		const method = response.config.method;
+		const method = response.config?.method;
 		const title = data?.title ?? "Exito!";
 		const type = data?.type ?? "success";
 		const message = data?.message;
