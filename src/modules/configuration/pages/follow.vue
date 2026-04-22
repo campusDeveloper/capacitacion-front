@@ -9,11 +9,11 @@
 					cliente o lead dentro del proceso inicial. Facilita el control de las interacciones, el historial de
 					contacto y la toma de decisiones en cada etapa.</p>
 			</div>
-			<el-table :data="dataOpportunityTracking" class="!w-fit table-sticky top-0">
+			<el-table :data="dataOpportunityTracking" class="!w-fit table-sticky top-0" v-loading="loading">
 				<el-table-column label="Seguimiento" width="150">
 					<template #default="{ row }">
 						<div class="d-middle-center rounded-lg h-[26px] !w-fit px-3"
-							:style="`border: 1px solid${row.color};`">
+							:style="`border: 1px solid ${row.color};`">
 							<p class="f-t-12">{{ row.name }}</p>
 						</div>
 					</template>
@@ -64,7 +64,7 @@
 			title="Eliminar estado" width="360" :onAction="handleDeleteTrackingStatus">
 			<p>¿Deseas eliminar este estado de seguimiento? <br /> Esta acción es irreversible</p>
 		</Modal>
-		<modalManageTrackingState ref="refModalManageTrackingState"  />
+		<modalManageTrackingState ref="refModalManageTrackingState" />
 		<modalSeeTrackingStatus ref="refModalSeeTrackingStatus" />
 	</section>
 </template>
@@ -75,6 +75,7 @@ import { useRouter } from 'vue-router';
 import modalManageTrackingState from '../partials/modalManageTrackingState.vue';
 import modalSeeTrackingStatus from '../partials/modalSeeTrackingStatus.vue';
 import { request } from "@request";
+import axios from 'axios';
 
 const refModalManageTrackingState = ref()
 const refModalActiveTrackingStatus = ref()
@@ -82,19 +83,34 @@ const refModalInactiveTrackingStatus = ref()
 const refModalDeleteTrackingStatus = ref()
 const refModalSeeTrackingStatus = ref()
 const router = useRouter();
+
+const loading = ref(false);
 const currentToggleId = ref(null);
-const currentToggleState = ref(null);
+const currentDeleteId = ref(null);
+const dataOpportunityTracking = ref([]);
+
 const options = [
 	{ option: 'Editar', action: openEditTrackingState, icon: 'icon-edit-2' },
 	{ option: 'Eliminar', action: openDeleteTrackingState, icon: 'icon-trash', danger: true },
 ]
-const refModalActiveStateInterest = ref()
-const refModalInactiveStateInterest = ref()
-const refModalManageState = ref()
-const refModalDeleteState = ref()
-const loading = ref(false);
-const currentDeleteId = ref(null);
-const dataOpportunityTracking = ref([]);
+
+onMounted(() => {
+	loadTrackingStates();
+});
+
+async function loadTrackingStates() {
+	loading.value = true;
+	try {
+		const response = await request(() => axios.get('/api/configuration/tracking-opportunities'));
+		if (response.data) {
+			dataOpportunityTracking.value = response.data;
+		}
+	} catch (error) {
+		console.error('Error loading tracking states:', error);
+	} finally {
+		loading.value = false;
+	}
+}
 
 function goBack() {
 	router.push({ name: 'configuration.main' })
@@ -104,37 +120,54 @@ function openCreateTrackingState() {
 	refModalManageTrackingState.value.open()
 }
 
-function openSeeTrackingStatus() {
-	refModalSeeTrackingStatus.value.open()
+function openSeeTrackingStatus(row) {
+	refModalSeeTrackingStatus.value.open(row)
 }
 
-function toggleState() {
-	if (1) {
-		refModalActiveTrackingStatus.value.open()
+function toggleState(row) {
+	currentToggleId.value = row.id;
+	if (row.state === 1) {
+		refModalActiveTrackingStatus.value.open();
 	} else {
-		refModalInactiveTrackingStatus.value.open()
+		refModalInactiveTrackingStatus.value.open();
 	}
-
+	return false;
 }
 
 async function handleActiveTrackingStatus() {
-	
+	const response = await request(() => axios.post(`/api/configuration/tracking-states/${currentToggleId.value}/state`, { state: 1 }));
+	if (response.data) {
+		const index = dataOpportunityTracking.value.findIndex(t => t.id === currentToggleId.value);
+		if (index !== -1) {
+			dataOpportunityTracking.value[index].state = 1;
+		}
+	}
 }
 
 async function handleInactiveTrackingStatus() {
-	
+	const response = await request(() => axios.post(`/api/configuration/tracking-states/${currentToggleId.value}/state`, { state: 0 }));
+	if (response.data) {
+		const index = dataOpportunityTracking.value.findIndex(t => t.id === currentToggleId.value);
+		if (index !== -1) {
+			dataOpportunityTracking.value[index].state = 0;
+		}
+	}
 }
 
-function openEditTrackingState() {
-	refModalManageTrackingState.value.openEdit()
+function openEditTrackingState(row) {
+	refModalManageTrackingState.value.openEdit(row)
 }
 
-function openDeleteTrackingState() {
-	refModalDeleteTrackingStatus.value.open()
+function openDeleteTrackingState(row) {
+	currentDeleteId.value = row.id;
+	refModalDeleteTrackingStatus.value.open();
 }
 
 async function handleDeleteTrackingStatus() {
-	
+	const response = await request(() => axios.delete(`/api/configuration/tracking-states/${currentDeleteId.value}`));
+	if (response.data) {
+		dataOpportunityTracking.value = dataOpportunityTracking.value.filter(t => t.id !== currentDeleteId.value);
+	}
 }
 
 </script>
