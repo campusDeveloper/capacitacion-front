@@ -72,8 +72,7 @@
 import { ref } from 'vue';
 import { Field, Form, useForm } from 'vee-validate'
 import popoverPickerColor from '../components/popoverPickerColor.vue';
-import { request } from '../../../services/http'
-import { fi } from 'element-plus/es/locales.mjs';
+import { getTrackingOpportunities } from '../services/trackingService';
 
 const refModalManageTrackingState = ref()
 const refFormState = ref()
@@ -89,7 +88,18 @@ const form = ref({
 const subList = ref([]);
 
 async function addContent() {
+  if (!form.value.name || !form.value.color) return;
+  subList.value.push({ name: form.value.name, color: form.value.color });
+  form.value.name = '';
+  form.value.color = null;
+}
 
+function openEdit(data = {}) {
+	isAdd.value = false;
+	isEdit.value = data.id || null;
+	form.value.name = data.name || '';
+	form.value.color = data.color || null;
+	refModalManageTrackingState.value.open();
 }
 
 
@@ -98,11 +108,11 @@ function removeContent(index) {
 }
 
 function open() {
-	refModalManageTrackingState.value.open()
-}
-
-function openEdit(data = {}) {
-	
+	subList.value = [];
+	isAdd.value = true;
+	isEdit.value = null;
+	form.value.name = '';
+	form.value.color = null;
 	refModalManageTrackingState.value.open()
 }
 

@@ -72,7 +72,7 @@
 	</ModalRight>
 	
 	<Modal ref="refModalDeleteTrackingStatus" type="danger" action="Eliminar" cancel="Cancelar" title="Eliminar estado"
-		width="360" :onAction="handleDeleteTrackingStatus">
+		width="360" :onAction="handleDeleteTrackingStatus" @close="refModalDeleteTrackingStatus.value.close()">
 		<p>¿Deseas eliminar este estado de seguimiento? <br /> Esta acción es irreversible</p>
 	</Modal>
 </template>
@@ -81,8 +81,7 @@
 import { ref, watch } from 'vue';
 import { Field, Form, useField, useForm } from 'vee-validate'
 import popoverPickerColor from '../components/popoverPickerColor.vue';
-import { request } from '../../../services/http'
-import axios from 'axios';
+import { getTrackingChildren, createTrackingChild, updateTrackingChild, deleteTrackingChild } from '../services/trackingService'; // A eliminar cuando se integre el servicio real
 
 const emit = defineEmits(['update'])
 
@@ -101,46 +100,42 @@ const { value: nameValue, errorMessage: nameError } = useField("name");
 const { value: colorValue, errorMessage: colorError } = useField("color");
 
 async function loadTrackingChildren(parentId) {
-	loading.value = true;
-	try {
-		const response = await request(() => axios.get(`/api/configuration/tracking-opportunities?parentId=${parentId}`));
-		if (response.data) {
-			dataOpportunityTrackingDetail.value = response.data;
-		}
-	} catch (error) {
-		console.error('Error loading tracking children:', error);
-	} finally {
-		loading.value = false;
-	}
+  loading.value = true;
+  try {
+    const response = await getTrackingChildren(parentId);
+    if (response.data) {
+      dataOpportunityTrackingDetail.value = response.data;
+    }
+  } catch (error) {
+    console.error('Error loading tracking children:', error);
+  } finally {
+    loading.value = false;
+  }
 }
 
 async function addContent() {
-	if (!nameValue.value || !colorValue.value) {
-		return;
-	}
-	
-	try {
-		const payload = {
-			name: nameValue.value,
-			color: colorValue.value,
-			idOpportunityTracking: parentRow.value.id,
-			state: 1
-		};
-		
-		await request(() => axios.post('/api/configuration/tracking-states', payload));
-		
-		// Limpiar campos
-		nameValue.value = '';
-		colorValue.value = '';
-		
-		// Recargar hijos
-		await loadTrackingChildren(parentRow.value.id);
-		
-		// Emitir evento para actualizar el listado principal
-		emit('update');
-	} catch (error) {
-		console.error('Error adding child state:', error);
-	}
+  if (!nameValue.value || !colorValue.value) {
+    return;
+  }
+  
+  try {
+    const payload = {
+      name: nameValue.value,
+      color: colorValue.value,
+      idOpportunityTracking: parentRow.value.id,
+      state: 1
+    };
+    
+    await createTrackingChild(payload);
+    
+    nameValue.value = '';
+    colorValue.value = '';
+    
+    await loadTrackingChildren(parentRow.value.id);
+    emit('update');
+  } catch (error) {
+    console.error('Error adding child state:', error);
+  }
 }
 
 function openEditChild(index) {
@@ -159,25 +154,24 @@ function cancelEdit() {
 }
 
 async function handleUpdateChild() {
-	if (!nameValue.value || !colorValue.value || !currentEditId.value) {
-		return;
-	}
-	
-	try {
-		const payload = {
-			name: nameValue.value,
-			color: colorValue.value
-		};
-		
-		await request(() => axios.put(`/api/configuration/tracking-states/${currentEditId.value}`, payload));
-		
-		// Limpiar y recargar
-		cancelEdit();
-		await loadTrackingChildren(parentRow.value.id);
-		emit('update');
-	} catch (error) {
-		console.error('Error updating child state:', error);
-	}
+  if (!nameValue.value || !colorValue.value || !currentEditId.value) {
+    return;
+  }
+  
+  try {
+    const payload = {
+      name: nameValue.value,
+      color: colorValue.value
+    };
+    
+    await updateTrackingChild(currentEditId.value, payload);
+    
+    cancelEdit();
+    await loadTrackingChildren(parentRow.value.id);
+    emit('update');
+  } catch (error) {
+    console.error('Error updating child state:', error);
+  }
 }
 
 function openDeleteChild(childId) {
@@ -186,14 +180,12 @@ function openDeleteChild(childId) {
 }
 
 async function handleDeleteTrackingStatus() {
-	if (!currentDeleteId.value) return;
-	
-	const response = await request(() => axios.delete(`/api/configuration/tracking-states/${currentDeleteId.value}`));
-	if (response.data) {
-		await loadTrackingChildren(parentRow.value.id);
-		refModalDeleteTrackingStatus.value.close();
-		emit('update');
-	}
+  if (!currentDeleteId.value) return;
+  
+  await deleteTrackingChild(currentDeleteId.value);
+  await loadTrackingChildren(parentRow.value.id);
+  refModalDeleteTrackingStatus.value.close();
+  emit('update');
 }
 
 async function open(row) {

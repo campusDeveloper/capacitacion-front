@@ -38,7 +38,7 @@ const props = defineProps({
 
 const { options, init } = toRefs(props);
 
-const instance = shallowRef(echarts.Echarts);
+const instance = shallowRef(null);
 const grafica = ref();
 
 onBeforeMount(() => {

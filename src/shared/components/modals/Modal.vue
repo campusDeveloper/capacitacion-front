@@ -22,7 +22,7 @@
 					<p v-if="subTitle" class="sub-title text-start mt-1">{{ subTitle }}</p>
 				</div>
 				<slot name="header-right" />
-				<i class="icon-close !text-xl text-[rgb(var(--xx-color-icons-primary))]" @click="close" />
+				<i class="icon-close !text-xl text-[rgb(var(--xx-color-icons-primary))]" @click="onCancelClick" />
 			</div>
 		</template>
 		<template #default>
@@ -35,7 +35,7 @@
 		<template v-if="footer" #footer>
 			<div class="flex modal-footer justify-end gap-x-2 gap-y-4 p-[1rem]">
 				<slot name="footer">
-					<Button v-if="btnCancel" :type-style="btnCancelType" :size="sizeBtn" @click.prevent="close" class="!min-w-[100px]"> {{ cancel }} </Button>
+					<Button v-if="btnCancel" :type-style="btnCancelType" :size="sizeBtn" @click.prevent="onCancelClick" class="!min-w-[100px]"> {{ cancel }} </Button>
 					<Button
 						v-if="btnConfirm && onAction"
 						:type-style="type === 'danger' ? 'danger' :btnActionType"
@@ -57,7 +57,7 @@
 import { ref, watch, computed } from 'vue';
 // import Spinner from '../Spinner.vue';
 
-const emit = defineEmits(['update:modelValue', 'close']);
+const emit = defineEmits(['update:modelValue', 'close', 'cancel']);
 
 const props = defineProps({
     type: {
@@ -171,6 +171,11 @@ watch(() => dialogVisible.value, (newValue) => {
 
 function close() {
 	dialogVisible.value = false;
+}
+
+function onCancelClick() {
+	emit('cancel');
+	close();
 }
 
 function open() {
