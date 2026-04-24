@@ -39,12 +39,15 @@ import { ref } from 'vue';
 import { Field, Form } from 'vee-validate'
 import ColorPicker from '@comp/ColorPicker.vue'
 import { request } from '../../../services/http'
+import * as Service from '../services/oportunityService'
 
 const refModalManageState = ref()
 const refFormState = ref()
+const emit = defineEmits(['update'])
 
 const isAdd = ref(true)
 const isClientType = ref(false)
+const idState = ref(null)
 const form = ref({
 	name: '',
 	description: '',
@@ -52,22 +55,62 @@ const form = ref({
 	state: 1
 })
 
+function resetFormData() {
+	idState.value = null
+	form.value = {
+		name: '',
+		description: '',
+		color: null,
+		state: 1
+	}
+}
+
 /* Functions */
 async function handleInterestState() {
-	
+	const isValid = await refFormState.value?.validate()
+	if (!isValid?.valid) return
+
+	const payload = {
+		name: form.value.name?.trim(),
+		description: form.value.description?.trim() || null,
+		color: form.value.color,
+		state: form.value.state ?? 1,
+	}
+
+	const serviceCall = isAdd.value
+		? () => Service.createOpportunityState(payload)
+		: () => Service.updateOpportunityState(idState.value, payload)
+
+	const { error } = await request(serviceCall)
+	if (error) return
+
+	emit('update')
+	close()
 }
 
 function open(identify = false) {
-	
+	isAdd.value = true
+	isClientType.value = identify
+	resetFormData()
 	refModalManageState.value.open()
 }
 
 function openEdit(data = {}, identify = false) {
-	
+	isAdd.value = false
+	isClientType.value = identify
+	idState.value = data?.id ?? null
+	form.value = {
+		name: data?.name ?? '',
+		description: data?.description ?? '',
+		color: data?.color ?? null,
+		state: data?.state ?? 1
+	}
 	refModalManageState.value.open()
 }
 
 function close() {
+	refFormState.value?.resetForm()
+	resetFormData()
 	refModalManageState.value.close()
 }
 

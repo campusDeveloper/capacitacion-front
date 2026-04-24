@@ -1,4 +1,4 @@
-<template>
+ <template>
 	<ModalRight ref="refModalManageTrackingState" :title="`${isAdd ? 'Crear' : 'Editar'} estado de seguimiento`"
 		destroyOnClose>
 		<p class="f-t-14">Agrega un título y un color para {{ isAdd ? 'crear' : 'editar' }} el estado </p>
