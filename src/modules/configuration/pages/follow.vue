@@ -21,7 +21,7 @@
 				<el-table-column label="Estados seguimiento" align="right" width="110">
 					<template #default="{ row }">
 						<div class="d-middle-end gap-x-2">
-							<p class="f-t-12">{{ row.countHijos }}</p>
+							<p class="f-t-12">{{ row.countChildren ?? row.countHijos ?? 0 }}</p>
 							<i class="icon-eye-fill cursor-pointer" @click="openSeeTrackingStatus(row)" />
 						</div>
 					</template>
@@ -30,14 +30,14 @@
 					<template #default="{ row }">
 						<div class="d-middle-end gap-x-1">
 							<p class="text-mid-gray-600 f-tm-12">{{ row.uses }}</p>
-							<i class="icon-mouse text-lg" />
+							<i class="icon-mouse text-lg"></i>
 						</div>
 					</template>
 				</el-table-column>
 			<el-table-column label="Estado" width="100" align="center">
 				<template #default="{ row }">
 					<el-switch v-model="row.state" :active-value="1" :inactive-value="0" size="small"
-						:class="{ 'row-disabled': !row.state }" :before-change="() => confirmToggle(row)" @change="onToggleConfirmed" />
+						:class="{ 'row-disabled': !row.state }" :before-change="() => confirmToggle(row)" />
 				</template>
 			</el-table-column>
 				<el-table-column width="55" align="center">
@@ -63,11 +63,12 @@
 		</Modal>
 
 		<Modal ref="refModalDeleteTrackingStatus" type="danger" action="Eliminar" cancel="Cancelar"
-			title="Eliminar estado" width="360" :onAction="handleDeleteTrackingStatus">
+			title="Eliminar estado" width="360" :onAction="handleDeleteTrackingStatus"
+			@cancel="resetDeleteTrackingStatus" @close="resetDeleteTrackingStatus">
 			<p>¿Deseas eliminar este estado de seguimiento? <br /> Esta acción es irreversible</p>
 		</Modal>
-		<modalManageTrackingState ref="refModalManageTrackingState" />
-		<modalSeeTrackingStatus ref="refModalSeeTrackingStatus" />
+		<modalManageTrackingState ref="refModalManageTrackingState" @update="loadTrackingStates" />
+		<modalSeeTrackingStatus ref="refModalSeeTrackingStatus" @update="loadTrackingStates" />
 	</section>
 </template>
 
@@ -76,7 +77,11 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import modalManageTrackingState from '../partials/modalManageTrackingState.vue';
 import modalSeeTrackingStatus from '../partials/modalSeeTrackingStatus.vue';
-import { getTrackingOpportunities } from '../services/trackingService'; // A eliminar cuando se integre el servicio real
+import {
+	getTrackingOpportunities,
+	toggleTrackingOpportunityState,
+	deleteTrackingOpportunity,
+} from '../services/trackingService';
 
 const refModalManageTrackingState = ref()
 const refModalActiveTrackingStatus = ref()
@@ -84,7 +89,6 @@ const refModalInactiveTrackingStatus = ref()
 const refModalDeleteTrackingStatus = ref()
 const refModalSeeTrackingStatus = ref()
 const currentToggleId = ref(null)
-const originalToggleState = ref(null)
 const modalResolveCallback = ref(null)
 const router = useRouter();
 
@@ -105,8 +109,9 @@ async function loadTrackingStates() {
   loading.value = true;
   try {
     const response = await getTrackingOpportunities();
-    if (response?.data && Array.isArray(response.data)) {
-      dataOpportunityTracking.value = sortByState(response.data);
+    const data = response?.data?.data || response?.data;
+    if (data && Array.isArray(data)) {
+      dataOpportunityTracking.value = sortByState(data);
     }
   } catch (error) {
     console.error('Error loading tracking states:', error);
@@ -121,7 +126,6 @@ function sortByState(list) {
 function confirmToggle(row) {
   return new Promise((resolve) => {
     currentToggleId.value = row.id;
-    originalToggleState.value = row.state;
     modalResolveCallback.value = resolve;
     if (row.state === 1) {
       refModalInactiveTrackingStatus.value.open();
@@ -132,34 +136,44 @@ function confirmToggle(row) {
 }
 
 async function handleActiveTrackingStatus() {
-  if (modalResolveCallback.value) {
-    modalResolveCallback.value(true);
-    modalResolveCallback.value = null;
+  if (!currentToggleId.value) return;
+
+  try {
+    await toggleTrackingOpportunityState(currentToggleId.value);
+    resolveToggle(true);
+    await loadTrackingStates();
+  } catch (error) {
+    console.error('Error activating tracking state:', error);
+    resolveToggle(false);
+  } finally {
+    currentToggleId.value = null;
   }
-  currentToggleId.value = null;
-  originalToggleState.value = null;
 }
 
 async function handleInactiveTrackingStatus() {
-  if (modalResolveCallback.value) {
-    modalResolveCallback.value(true);
-    modalResolveCallback.value = null;
+  if (!currentToggleId.value) return;
+
+  try {
+    await toggleTrackingOpportunityState(currentToggleId.value);
+    resolveToggle(true);
+    await loadTrackingStates();
+  } catch (error) {
+    console.error('Error deactivating tracking state:', error);
+    resolveToggle(false);
+  } finally {
+    currentToggleId.value = null;
   }
-  currentToggleId.value = null;
-  originalToggleState.value = null;
 }
 
 function onCancelToggle() {
-  if (modalResolveCallback.value) {
-    modalResolveCallback.value(false);
-    modalResolveCallback.value = null;
-  }
+  resolveToggle(false);
   currentToggleId.value = null;
-  originalToggleState.value = null;
 }
 
-function onToggleConfirmed() {
-  dataOpportunityTracking.value = sortByState([...dataOpportunityTracking.value]);
+function resolveToggle(value) {
+  if (!modalResolveCallback.value) return;
+  modalResolveCallback.value(value);
+  modalResolveCallback.value = null;
 }
 
 function goBack() {
@@ -184,7 +198,20 @@ function openDeleteTrackingState(row) {
 }
 
 async function handleDeleteTrackingStatus() {
-  dataOpportunityTracking.value = dataOpportunityTracking.value.filter(t => t.id !== currentDeleteId.value);
+  if (!currentDeleteId.value) return;
+
+  try {
+    await deleteTrackingOpportunity(currentDeleteId.value);
+    refModalDeleteTrackingStatus.value.close();
+    currentDeleteId.value = null;
+    await loadTrackingStates();
+  } catch (error) {
+    console.error('Error deleting tracking state:', error);
+  }
+}
+
+function resetDeleteTrackingStatus() {
+	currentDeleteId.value = null;
 }
 
 </script>

@@ -1,211 +1,287 @@
 <template>
-	<ModalRight ref="refModalSeeTrackingStatus" title="Ver estado de seguimiento" destroyOnClose @close="onModalClose">
-		<p class="f-t-14">Revisa los estados de seguimiento y ajustalos según tu pereferencia</p>
-		
-		<!-- Info del estado padre -->
-		<div v-if="parentRow" class="d-middle gap-x-3 my-5 p-4 bg-brand-50 rounded-lg">
-			<div class="d-middle-center rounded-lg h-[34px] w-[116px] border f-t-14 px-2"
-				:style="{ borderColor: parentRow.color, color: parentRow.color }">
-				{{ parentRow.name }}
-			</div>
-			<div class="text-sm text-mid-gray-600">
-				<p><strong>Usos totales:</strong> {{ parentRow.uses }}</p>
-				<p><strong>Estado:</strong> {{ parentRow.state === 1 ? 'Activo' : 'Inactivo' }}</p>
-			</div>
-		</div>
+	<div>
+		<ModalRight ref="refModalSeeTrackingStatus" title="Ver estado de seguimiento" destroyOnClose @close="handleClose">
+			<p class="f-t-14">Revisa los estados de seguimiento y ajustalos segun tu preferencia</p>
 
-		<p class="f-tm-18 my-5 text-mid-gray-600">Estados hijos</p>
-		
-		<template v-if="dataOpportunityTrackingDetail.length > 0">
-			<div v-for="(value, index) in dataOpportunityTrackingDetail" :key="value.id" class="d-middle text-mid-gray-300 gap-x-3 my-4 min-h-9">
+			<div v-if="parentRow" class="d-middle gap-x-3 my-5 p-4 bg-brand-50 rounded-lg">
 				<div class="d-middle-center rounded-lg h-[34px] w-[116px] border f-t-14 px-2"
-					:style="{ borderColor: value.color, color: value.color }">
-					{{ value.name }}
+					:style="{ borderColor: parentRow.color, color: parentRow.color }">
+					{{ parentRow.name }}
 				</div>
-				<i class="icon-trash text-lg cursor-pointer" @click="openDeleteChild(value.id)" />
-				<i class="icon-edit-2 text-lg cursor-pointer" @click="openEditChild(index)" />
-				<el-tooltip content="Usos" placement="top">
-					<div class="d-middle-end gap-x-1">
-						<p class="text-black-300 f-tm-14">{{ value.uses }}</p>
-						<i class="icon-mouse text-lg" />
+				<div class="text-sm text-mid-gray-600">
+					<p><strong>Usos totales:</strong> {{ parentRow.uses }}</p>
+					<p><strong>Estado:</strong> {{ parentRow.state === 1 ? 'Activo' : 'Inactivo' }}</p>
+				</div>
+			</div>
+
+			<p class="f-tm-18 my-5 text-mid-gray-600">Estados hijos</p>
+
+			<div v-loading="loading">
+				<template v-if="dataOpportunityTrackingDetail.length > 0">
+					<div v-for="(value, index) in dataOpportunityTrackingDetail" :key="getChildId(value)"
+						class="d-middle text-mid-gray-300 gap-x-3 my-4 min-h-9">
+						<div class="d-middle-center rounded-lg h-[34px] w-[116px] border f-t-14 px-2"
+							:style="{ borderColor: value.color, color: value.color }">
+							{{ value.name }}
+						</div>
+						<i class="icon-trash text-lg cursor-pointer" @click="openDeleteChild(getChildId(value))"></i>
+						<i class="icon-edit-2 text-lg cursor-pointer" @click="openEditChild(index)"></i>
+						<el-tooltip content="Usos" placement="top">
+							<div class="d-middle-end gap-x-1">
+								<p class="text-black-300 f-tm-14">{{ value.uses }}</p>
+								<i class="icon-mouse text-lg"></i>
+							</div>
+						</el-tooltip>
 					</div>
-				</el-tooltip>
-			</div>
-			
-			<!-- Formulario de edición -->
-			<div v-if="isEdit !== null" class="d-middle gap-x-3 my-4 min-h-9">
-				<el-input v-model="nameValue" placeholder="Agregar título" class="!w-[222px]" maxlength="40"
-					show-word-limit />
-				<Error :local="nameError" server="name" />
-				<popoverPickerColor v-model="colorValue" />
-				<Error :local="colorError" server="color" />
-				<Button type-style="tertiary" @click="handleUpdateChild">Guardar</Button>
-				<Button type-style="secondary" @click="cancelEdit">Cancelar</Button>
-			</div>
-			
-			<!-- Formulario de agregar -->
-			<Form ref="refFormTitles" @submit.prevent="addContent">
+				</template>
+
+				<p v-else class="text-mid-gray-500 text-center my-8">No hay estados hijos registrados</p>
+
+				<div v-if="isEdit !== null" class="d-middle gap-x-3 my-4 min-h-9">
+					<el-input v-model="editForm.name" placeholder="Agregar titulo" class="!w-[222px]" maxlength="40"
+						show-word-limit />
+					<popoverPickerColor v-model="editForm.color" />
+					<Button type="button" type-style="tertiary" @click="handleUpdateChild">Guardar</Button>
+					<Button type="button" type-style="secondary" @click="cancelEdit">Cancelar</Button>
+				</div>
+
 				<div class="d-middle gap-x-3 mt-5">
-					<Field name="nameAdd" rules="required|max:40" v-slot="{ field, errorMessage }">
-						<div>
-							<el-input :model-value="field.value" @update:model-value="field.onChange"
-								placeholder="Agregar título" class="!w-[222px]" maxlength="40" show-word-limit />
-							<Error :local="errorMessage" server="name" />
-						</div>
-					</Field>
-					<Field name="colorAdd" rules="required" v-slot="{ field, errorMessage }">
-						<div>
-							<popoverPickerColor :model-value="field.value" @update:model-value="field.onChange" />
-							<Error :local="errorMessage" server="color" />
-						</div>
-					</Field>
-					<Button type-style="tertiary" type="submit">
+					<el-input v-model="newChildForm.name" placeholder="Agregar titulo" class="!w-[222px]" maxlength="40"
+						show-word-limit />
+					<popoverPickerColor v-model="newChildForm.color" />
+					<Button type="button" type-style="tertiary" @click="addContent">
 						Agregar
 					</Button>
 				</div>
-			</Form>
-		</template>
-		
-		<template v-else>
-			<p class="text-mid-gray-500 text-center my-8">No hay estados hijos registrados</p>
-		</template>
-	</ModalRight>
-	
-	<Modal ref="refModalDeleteTrackingStatus" type="danger" action="Eliminar" cancel="Cancelar" title="Eliminar estado"
-		width="360" :onAction="handleDeleteTrackingStatus" @close="refModalDeleteTrackingStatus.value.close()">
-		<p>¿Deseas eliminar este estado de seguimiento? <br /> Esta acción es irreversible</p>
-	</Modal>
+			</div>
+		</ModalRight>
+
+		<Modal ref="refModalDeleteTrackingStatus" type="danger" action="Eliminar" cancel="Cancelar" title="Eliminar estado"
+			width="360" :onAction="handleDeleteTrackingStatus" @cancel="resetDeleteTrackingStatus"
+			@close="resetDeleteTrackingStatus">
+			<p>Deseas eliminar este estado de seguimiento? <br /> Esta accion es irreversible</p>
+		</Modal>
+	</div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
-import { Field, Form, useField, useForm } from 'vee-validate'
+import { ref } from 'vue';
 import popoverPickerColor from '../components/popoverPickerColor.vue';
-import { getTrackingChildren, createTrackingChild, updateTrackingChild, deleteTrackingChild } from '../services/trackingService'; // A eliminar cuando se integre el servicio real
+import {
+	getTrackingChildren,
+	createTrackingChild,
+	updateTrackingChild,
+	deleteTrackingChild,
+} from '../services/trackingService';
 
-const emit = defineEmits(['update'])
+const emit = defineEmits(['update']);
 
-const refModalSeeTrackingStatus = ref()
-const refFormTitles = ref()
+const refModalSeeTrackingStatus = ref();
+const refModalDeleteTrackingStatus = ref();
+
 const dataOpportunityTrackingDetail = ref([]);
 const loading = ref(false);
 const parentRow = ref(null);
-
 const isEdit = ref(null);
 const currentEditId = ref(null);
 const currentDeleteId = ref(null);
-const refModalDeleteTrackingStatus = ref()
 
-const { value: nameValue, errorMessage: nameError } = useField("name");
-const { value: colorValue, errorMessage: colorError } = useField("color");
+const editForm = ref({
+	name: '',
+	color: null,
+});
+
+const newChildForm = ref({
+	name: '',
+	color: null,
+});
 
 async function loadTrackingChildren(parentId) {
-  loading.value = true;
-  try {
-    const response = await getTrackingChildren(parentId);
-    if (response.data) {
-      dataOpportunityTrackingDetail.value = response.data;
-    }
-  } catch (error) {
-    console.error('Error loading tracking children:', error);
-  } finally {
-    loading.value = false;
-  }
+	loading.value = true;
+	try {
+		const response = await getTrackingChildren(parentId);
+		const data = response?.data?.data || response?.data;
+		console.log('[loadTrackingChildren] Received data:', data);
+		dataOpportunityTrackingDetail.value = Array.isArray(data) ? data : [];
+	} catch (error) {
+		console.error('Error loading tracking children:', error);
+		dataOpportunityTrackingDetail.value = [];
+	} finally {
+		loading.value = false;
+	}
 }
 
 async function addContent() {
-  if (!nameValue.value || !colorValue.value) {
-    return;
-  }
-  
-  try {
-    const payload = {
-      name: nameValue.value,
-      color: colorValue.value,
-      idOpportunityTracking: parentRow.value.id,
-      state: 1
-    };
-    
-    await createTrackingChild(payload);
-    
-    nameValue.value = '';
-    colorValue.value = '';
-    
-    await loadTrackingChildren(parentRow.value.id);
-    emit('update');
-  } catch (error) {
-    console.error('Error adding child state:', error);
-  }
+	if (!newChildForm.value.name || !newChildForm.value.color || !parentRow.value?.id) return;
+
+	try {
+        await createTrackingChild({
+            name: newChildForm.value.name,
+            color: newChildForm.value.color,
+            idOpportunityTracking: parentRow.value.id,
+            state: 1,
+        });
+
+        resetNewChildForm();
+        await loadTrackingChildren(parentRow.value.id);
+        emit('update');
+        close();
+	} catch (error) {
+		console.error('Error adding child state:', {
+			status: error?.response?.status,
+			data: error?.response?.data,
+			message: error?.message,
+			parentId: parentRow.value?.id
+		});
+	}
 }
 
 function openEditChild(index) {
 	const child = dataOpportunityTrackingDetail.value[index];
+	if (!child) {
+		console.log('[openEditChild] No child at index', index);
+		return;
+	}
+
+	const childId = getChildId(child);
+	console.log('[openEditChild] Child data:', child, 'Extracted childId:', childId);
+
+	if (!childId) {
+		console.log('[openEditChild] childId is falsy');
+		return;
+	}
+
 	isEdit.value = index;
-	currentEditId.value = child.id;
-	nameValue.value = child.name;
-	colorValue.value = child.color;
+	currentEditId.value = childId;
+	editForm.value.name = child.name;
+	editForm.value.color = child.color;
+	console.log('[openEditChild] Edit state set:', { isEdit: index, currentEditId: childId, name: child.name, color: child.color });
 }
 
 function cancelEdit() {
 	isEdit.value = null;
 	currentEditId.value = null;
-	nameValue.value = '';
-	colorValue.value = '';
+	editForm.value.name = '';
+	editForm.value.color = null;
 }
 
 async function handleUpdateChild() {
-  if (!nameValue.value || !colorValue.value || !currentEditId.value) {
-    return;
-  }
-  
-  try {
-    const payload = {
-      name: nameValue.value,
-      color: colorValue.value
-    };
-    
-    await updateTrackingChild(currentEditId.value, payload);
-    
-    cancelEdit();
-    await loadTrackingChildren(parentRow.value.id);
-    emit('update');
-  } catch (error) {
-    console.error('Error updating child state:', error);
-  }
+	console.log('[handleUpdateChild] Validation check:', {
+		name: editForm.value.name,
+		color: editForm.value.color,
+		currentEditId: currentEditId.value,
+		parentId: parentRow.value?.id,
+		parentRow: parentRow.value
+	});
+
+	if (!editForm.value.name || !editForm.value.color || !currentEditId.value || !parentRow.value?.id) {
+		console.log('[handleUpdateChild] Validation FAILED');
+		return;
+	}
+
+	try {
+		await updateTrackingChild(parentRow.value.id, currentEditId.value, {
+			name: editForm.value.name,
+			color: editForm.value.color,
+		});
+
+		cancelEdit();
+		await loadTrackingChildren(parentRow.value.id);
+		emit('update');
+	} catch (error) {
+		console.error('Error updating child state:', {
+			status: error?.response?.status,
+			data: error?.response?.data,
+			message: error?.message,
+			parentId: parentRow.value?.id,
+			childId: currentEditId.value
+		});
+	}
 }
 
 function openDeleteChild(childId) {
+	console.log('[openDeleteChild] Received childId:', childId);
+	if (!childId) {
+		console.log('[openDeleteChild] childId is falsy, aborting');
+		return;
+	}
 	currentDeleteId.value = childId;
 	refModalDeleteTrackingStatus.value.open();
 }
 
 async function handleDeleteTrackingStatus() {
-  if (!currentDeleteId.value) return;
-  
-  await deleteTrackingChild(currentDeleteId.value);
-  await loadTrackingChildren(parentRow.value.id);
-  refModalDeleteTrackingStatus.value.close();
-  emit('update');
+	console.log('[handleDeleteTrackingStatus] Validation check:', {
+		currentDeleteId: currentDeleteId.value,
+		parentId: parentRow.value?.id,
+		parentRow: parentRow.value
+	});
+
+	if (!currentDeleteId.value || !parentRow.value?.id) {
+		console.log('[handleDeleteTrackingStatus] Validation FAILED');
+		resetDeleteTrackingStatus();
+		return;
+	}
+
+	try {
+		await deleteTrackingChild(parentRow.value.id, currentDeleteId.value);
+		refModalDeleteTrackingStatus.value.close();
+		resetDeleteTrackingStatus();
+		await loadTrackingChildren(parentRow.value.id);
+		emit('update');
+	} catch (error) {
+		console.error('Error deleting child state:', {
+			status: error?.response?.status,
+			data: error?.response?.data,
+			message: error?.message,
+			parentId: parentRow.value?.id,
+			childId: currentDeleteId.value
+		});
+	}
 }
 
 async function open(row) {
 	parentRow.value = row;
-	isEdit.value = null;
-	currentEditId.value = null;
-	nameValue.value = '';
-	colorValue.value = '';
-	
-	await loadTrackingChildren(row.id);
+	cancelEdit();
+	resetNewChildForm();
 	refModalSeeTrackingStatus.value.open();
+	await loadTrackingChildren(row.id);
 }
 
-function onModalClose() {
+function resetNewChildForm() {
+	newChildForm.value.name = '';
+	newChildForm.value.color = null;
+}
+
+function resetDeleteTrackingStatus() {
+	currentDeleteId.value = null;
+}
+
+function getChildId(child) {
+	if (!child) {
+		console.log('[getChildId] Child is null/undefined');
+		return null;
+	}
+	// According to backend response, the field is 'idTracking'
+	const id = child.idTracking;
+	console.log('[getChildId] Child object keys:', Object.keys(child), 'idTracking value:', id);
+	return id ?? null;
+}
+
+function handleClose() {
+	cancelEdit();
+	resetNewChildForm();
+	resetDeleteTrackingStatus();
+	loading.value = false;
+	parentRow.value = null;
+	dataOpportunityTrackingDetail.value = [];
+}
+
+function close() {
 	refModalSeeTrackingStatus.value.close();
 }
 
 defineExpose({
 	open,
-	close: onModalClose,
+	close,
 });
-
 </script>
