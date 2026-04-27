@@ -63,6 +63,7 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import modalManageState from '../partials/modalManageState.vue';
+import { request } from '@request'
 import * as Service from '../services/oportunityService'
 
 const refModalActiveStateInterest = ref()
@@ -85,13 +86,15 @@ const currentId = ref(null);
 async function loadOpportunityStates() {
     loading.value = true;
     try {
-        const res = await Service.getAllOpportunityStates();
+        const { data, error } = await request(() => Service.getAllOpportunityStates(), false);
+        if (error) {
+            dataOpportunityState.value = [];
+            return;
+        }
 
-        const states = res?.data?.data || [];
+        const states = data?.data || [];
         dataOpportunityState.value = [...states].sort((a, b) => b.state - a.state);
-
     } catch (e) {
-        console.error(e);
         dataOpportunityState.value = [];
     } finally {
         loading.value = false;
@@ -113,14 +116,16 @@ async function toggleState(row) {
 }
 
 async function handleActiveStateInterest() {
-    await Service.switchOpportunityStatus(currentId.value);
+    const { error } = await request(() => Service.switchOpportunityStatus(currentId.value));
+    if (error) return;
     await loadOpportunityStates();
     refModalActiveStateInterest.value.close();
 }
 
 
 async function handleInactiveStateInterest() {
-    await Service.switchOpportunityStatus(currentId.value);
+    const { error } = await request(() => Service.switchOpportunityStatus(currentId.value));
+    if (error) return;
     await loadOpportunityStates();
     refModalInactiveStateInterest.value.close();
 }
@@ -138,7 +143,8 @@ function openDeleteStateInterest(row) {
     refModalDeleteState.value.open();
 }
 async function handleDeleteState() {
-    await Service.deleteOpportunityState(currentId.value);
+    const { error } = await request(() => Service.deleteOpportunityState(currentId.value));
+    if (error) return;
     await loadOpportunityStates();
     refModalDeleteState.value.close();
 }
