@@ -68,7 +68,7 @@
 import { ref } from 'vue';
 import popoverPickerColor from '../components/popoverPickerColor.vue';
 import {
-	getTrackingChildren,
+	getTrackingOpportunityDetail,
 	createTrackingChild,
 	updateTrackingChild,
 	deleteTrackingChild,
@@ -99,10 +99,13 @@ const newChildForm = ref({
 async function loadTrackingChildren(parentId) {
 	loading.value = true;
 	try {
-		const response = await getTrackingChildren(parentId);
-		const data = response?.data?.data || response?.data;
-		console.log('[loadTrackingChildren] Received data:', data);
-		dataOpportunityTrackingDetail.value = Array.isArray(data) ? data : [];
+		const response = await getTrackingOpportunityDetail(parentId);
+		const detail = response?.data?.data || response?.data;
+		console.log('[loadTrackingChildren] Received detail:', detail);
+		// Extract children from the detail response - backend returns parent with nested children
+		const children = detail?.children || detail?.subStates || detail?.opportunityTrackingChildren || detail?.trackingChildren || [];
+		console.log('[loadTrackingChildren] Extracted children:', children);
+		dataOpportunityTrackingDetail.value = Array.isArray(children) ? children : [];
 	} catch (error) {
 		console.error('Error loading tracking children:', error);
 		dataOpportunityTrackingDetail.value = [];
@@ -114,18 +117,16 @@ async function loadTrackingChildren(parentId) {
 async function addContent() {
 	if (!newChildForm.value.name || !newChildForm.value.color || !parentRow.value?.id) return;
 
-	try {
-        await createTrackingChild({
-            name: newChildForm.value.name,
-            color: newChildForm.value.color,
-            idOpportunityTracking: parentRow.value.id,
-            state: 1,
-        });
+		try {
+			await createTrackingChild(parentRow.value.id, {
+				name: newChildForm.value.name,
+				color: newChildForm.value.color,
+				state: 1,
+			});
 
         resetNewChildForm();
         await loadTrackingChildren(parentRow.value.id);
         emit('update');
-        close();
 	} catch (error) {
 		console.error('Error adding child state:', {
 			status: error?.response?.status,

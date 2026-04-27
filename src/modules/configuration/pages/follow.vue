@@ -142,6 +142,7 @@ async function handleActiveTrackingStatus() {
     await toggleTrackingOpportunityState(currentToggleId.value);
     resolveToggle(true);
     await loadTrackingStates();
+	refModalActiveTrackingStatus.value.close();
   } catch (error) {
     console.error('Error activating tracking state:', error);
     resolveToggle(false);
@@ -157,6 +158,7 @@ async function handleInactiveTrackingStatus() {
     await toggleTrackingOpportunityState(currentToggleId.value);
     resolveToggle(true);
     await loadTrackingStates();
+	refModalInactiveTrackingStatus.value.close();
   } catch (error) {
     console.error('Error deactivating tracking state:', error);
     resolveToggle(false);
