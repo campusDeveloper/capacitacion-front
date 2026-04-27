@@ -55,7 +55,7 @@
 			width="360" :onAction="handleDeleteState">
 			<p>¿Deseas eliminar este estado de interés? <br /> Esta acción es irreversible</p>
 		</Modal>
-		<modalManageState ref="refModalManageState" @update="loadopportunityStates" />
+		<modalManageState ref="refModalManageState" @update="loadOpportunityStates" />
 	</section>
 </template>
 
@@ -63,7 +63,8 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import modalManageState from '../partials/modalManageState.vue';
-import { request } from "@request";
+import { request } from '@request'
+import * as Service from '../services/oportunityService'
 
 const refModalActiveStateInterest = ref()
 const refModalInactiveStateInterest = ref()
@@ -79,43 +80,76 @@ const options = [
 	{ option: 'Editar', action: openEditStateInterest, icon: 'icon-edit-2' },
 	{ option: 'Eliminar', action: openDeleteStateInterest, icon: 'icon-trash', danger: true },
 ]
+const currentId = ref(null);
 
 
+async function loadOpportunityStates() {
+    loading.value = true;
+    try {
+        const { data, error } = await request(() => Service.getAllOpportunityStates(), false);
+        if (error) {
+            dataOpportunityState.value = [];
+            return;
+        }
+
+        const states = data?.data || [];
+        dataOpportunityState.value = [...states].sort((a, b) => b.state - a.state);
+    } catch (e) {
+        dataOpportunityState.value = [];
+    } finally {
+        loading.value = false;
+    }
+}
 
 function goBack() {
 	router.push({ name: 'configuration.main' })
 }
 
-function toggleState() {
-	if (1) {
-		refModalActiveStateInterest.value.open()
-	} else {
-		refModalInactiveStateInterest.value.open()
-	}
+async function toggleState(row) {
+    currentId.value = row.id;
+    if (row.state === 0) {
+        refModalActiveStateInterest.value.open();
+    } else {
+        refModalInactiveStateInterest.value.open();
+    }
+    return false;
 }
 
 async function handleActiveStateInterest() {
-	
+    const { error } = await request(() => Service.switchOpportunityStatus(currentId.value));
+    if (error) return;
+    await loadOpportunityStates();
+    refModalActiveStateInterest.value.close();
 }
 
-async function handleInactiveStateInterest() {
 
+async function handleInactiveStateInterest() {
+    const { error } = await request(() => Service.switchOpportunityStatus(currentId.value));
+    if (error) return;
+    await loadOpportunityStates();
+    refModalInactiveStateInterest.value.close();
 }
 
 function openCreateState() {
 	refModalManageState.value.open()
 }
 
-function openEditStateInterest() {
-	refModalManageState.value.openEdit()
+function openEditStateInterest(row) {
+    refModalManageState.value.openEdit(row);
 }
 
-function openDeleteStateInterest() {
-	refModalDeleteState.value.open()
+function openDeleteStateInterest(row) {
+    currentId.value = row.id;
+    refModalDeleteState.value.open();
 }
-
 async function handleDeleteState() {
-	
+    const { error } = await request(() => Service.deleteOpportunityState(currentId.value));
+    if (error) return;
+    await loadOpportunityStates();
+    refModalDeleteState.value.close();
 }
+onMounted(() => {
+    loadOpportunityStates();
+});
 
 </script>
