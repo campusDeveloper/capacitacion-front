@@ -108,8 +108,7 @@ onMounted(() => {
 async function loadTrackingStates() {
   loading.value = true;
   try {
-    const response = await getTrackingOpportunities();
-    const data = response?.data?.data || response?.data;
+    const data = await getTrackingOpportunities();
     if (data && Array.isArray(data)) {
       dataOpportunityTracking.value = sortByState(data);
     }

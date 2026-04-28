@@ -1,6 +1,7 @@
 <template>
 	<div>
-		<ModalRight ref="refModalSeeTrackingStatus" title="Ver estado de seguimiento" destroyOnClose @close="handleClose">
+		<ModalRight ref="refModalSeeTrackingStatus" title="Ver estado de seguimiento" destroyOnClose
+			@close="handleClose">
 			<p class="f-t-14">Revisa los estados de seguimiento y ajustalos segun tu preferencia</p>
 
 			<div v-if="parentRow" class="d-middle gap-x-3 my-5 p-4 bg-brand-50 rounded-lg">
@@ -56,9 +57,9 @@
 			</div>
 		</ModalRight>
 
-		<Modal ref="refModalDeleteTrackingStatus" type="danger" action="Eliminar" cancel="Cancelar" title="Eliminar estado"
-			width="360" :onAction="handleDeleteTrackingStatus" @cancel="resetDeleteTrackingStatus"
-			@close="resetDeleteTrackingStatus">
+		<Modal ref="refModalDeleteTrackingStatus" type="danger" action="Eliminar" cancel="Cancelar"
+			title="Eliminar estado" width="360" :onAction="handleDeleteTrackingStatus"
+			@cancel="resetDeleteTrackingStatus" @close="resetDeleteTrackingStatus">
 			<p>Deseas eliminar este estado de seguimiento? <br /> Esta accion es irreversible</p>
 		</Modal>
 	</div>
@@ -69,9 +70,9 @@ import { ref } from 'vue';
 import popoverPickerColor from '../components/popoverPickerColor.vue';
 import {
 	getTrackingOpportunityDetail,
-	createTrackingChild,
-	updateTrackingChild,
-	deleteTrackingChild,
+	createSubState,
+	updateSubState,
+	deleteSubState
 } from '../services/trackingService';
 
 const emit = defineEmits(['update']);
@@ -117,12 +118,12 @@ async function loadTrackingChildren(parentId) {
 async function addContent() {
 	if (!newChildForm.value.name || !newChildForm.value.color || !parentRow.value?.id) return;
 
-		try {
-			await createTrackingChild(parentRow.value.id, {
-				name: newChildForm.value.name,
-				color: newChildForm.value.color,
-				state: 1,
-			});
+	try {
+		await createSubState(parentRow.value.id, {
+			name: newChildForm.value.name,
+			color: newChildForm.value.color,
+			state: 1,
+		});
 
         resetNewChildForm();
         await loadTrackingChildren(parentRow.value.id);
@@ -171,17 +172,16 @@ async function handleUpdateChild() {
 		name: editForm.value.name,
 		color: editForm.value.color,
 		currentEditId: currentEditId.value,
-		parentId: parentRow.value?.id,
 		parentRow: parentRow.value
 	});
 
-	if (!editForm.value.name || !editForm.value.color || !currentEditId.value || !parentRow.value?.id) {
+	if (!editForm.value.name || !editForm.value.color || !currentEditId.value) {
 		console.log('[handleUpdateChild] Validation FAILED');
 		return;
 	}
 
 	try {
-		await updateTrackingChild(parentRow.value.id, currentEditId.value, {
+		await updateSubState(parentRow.value.id, currentEditId.value, {
 			name: editForm.value.name,
 			color: editForm.value.color,
 		});
@@ -194,7 +194,6 @@ async function handleUpdateChild() {
 			status: error?.response?.status,
 			data: error?.response?.data,
 			message: error?.message,
-			parentId: parentRow.value?.id,
 			childId: currentEditId.value
 		});
 	}
@@ -213,18 +212,17 @@ function openDeleteChild(childId) {
 async function handleDeleteTrackingStatus() {
 	console.log('[handleDeleteTrackingStatus] Validation check:', {
 		currentDeleteId: currentDeleteId.value,
-		parentId: parentRow.value?.id,
 		parentRow: parentRow.value
 	});
 
-	if (!currentDeleteId.value || !parentRow.value?.id) {
+	if (!currentDeleteId.value) {
 		console.log('[handleDeleteTrackingStatus] Validation FAILED');
 		resetDeleteTrackingStatus();
 		return;
 	}
 
 	try {
-		await deleteTrackingChild(parentRow.value.id, currentDeleteId.value);
+		await deleteSubState(parentRow.value.id, currentDeleteId.value);
 		refModalDeleteTrackingStatus.value.close();
 		resetDeleteTrackingStatus();
 		await loadTrackingChildren(parentRow.value.id);
@@ -234,7 +232,6 @@ async function handleDeleteTrackingStatus() {
 			status: error?.response?.status,
 			data: error?.response?.data,
 			message: error?.message,
-			parentId: parentRow.value?.id,
 			childId: currentDeleteId.value
 		});
 	}
