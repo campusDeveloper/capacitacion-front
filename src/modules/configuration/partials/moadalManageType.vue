@@ -31,13 +31,14 @@
 import { ref } from 'vue';
 import { Field, Form } from 'vee-validate'
 import ColorPicker from '@comp/ColorPicker.vue'
-import { request } from '../../../services/http'
+import { createCustomerType, updateCustomerType } from '../services/customerTypeService'
 
 const refModalManageType = ref()
 const refFormState = ref()
 
 const isAdd = ref(true)
 const isClientType = ref(false)
+const currentId = ref(null)
 const form = ref({
     name: '',
     description: '',
@@ -47,20 +48,48 @@ const form = ref({
 
 /* Functions */
 async function handleInterestState() {
-   
+    const valid = await refFormState.value.validate()
+    if (!valid) return
+
+    try {
+        if (isAdd.value) {
+            await createCustomerType(form.value)
+        } else {
+            await updateCustomerType(currentId.value, form.value)
+        }
+        close()
+        emit('update')
+    } catch (e) {
+        console.error(e)
+    }
 }
 
 function open(identify = false) {
+    isAdd.value = true
+    currentId.value = null
+    form.value = { name: '', description: '', color: null, state: 1 }
+    refFormState.value?.resetForm()
     refModalManageType.value.open()
 }
 
-function openEdit() {
+function openEdit(data) {
+    isAdd.value = false
+    currentId.value = data.id
+    form.value = { 
+        name: data.name, 
+        description: data.description, 
+        color: data.color, 
+        state: data.state 
+    }
+    refFormState.value?.resetForm()
     refModalManageType.value.open()
 }
 
 function close() {
     refModalManageType.value.close()
 }
+
+const emit = defineEmits(['update'])
 
 defineExpose({
     open,

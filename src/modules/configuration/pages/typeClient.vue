@@ -65,6 +65,7 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import modalManageState from '../partials/moadalManageType.vue';
+import { getCustomerTypes, deleteCustomerType, updateCustomerTypeState } from '../services/customerTypeService';
 import { request } from "@request";
 
 
@@ -86,41 +87,82 @@ const options = [
 	{ option: 'Eliminar', action: openDeleteClientType, icon: 'icon-trash', danger: true },
 ]
 
+onMounted(() => {
+	loadclientTypes();
+});
+
 function goBack() {
 	router.push({ name: 'configuration.main' })
 }
 
-function toggleState() {
-	if (1) {
+async function loadclientTypes() {
+	loading.value = true;
+	const { data, error } = await request(() => getCustomerTypes());
+	if (data && !error) {
+		// El backend puede devolver { data: [...] } o el array directamente
+		let array = Array.isArray(data) ? data : (data.data || []);
+		// Ordenar por state descendente (1 primero, 0 después)
+		array.sort((a, b) => b.state - a.state);
+		dataClientType.value = array;
+	}
+	loading.value = false;
+}
+
+function toggleState(row) {
+	currentToggleId.value = row.id;
+	currentToggleState.value = row.state;
+	if (row.state == 1) {
 		refModalActiveClientType.value.open()
 	} else {
 		refModalInactiveClientType.value.open()
 	}
-
+	return false;
 }
 
 async function handleActiveClientType() {
-	
+	if (currentToggleId.value != null) {
+		const { error } = await updateCustomerTypeState(currentToggleId.value, 1);
+		if (!error) {
+			await loadclientTypes();
+		}
+		currentToggleId.value = null;
+		currentToggleState.value = null;
+	}
 }
 
 async function handleInactiveClientType() {
-	
+	if (currentToggleId.value != null) {
+		const { error } = await request(() => updateCustomerTypeState(currentToggleId.value, 0));
+		if (!error) {
+			await loadclientTypes();
+		}
+		currentToggleId.value = null;
+		currentToggleState.value = null;
+	}
 }
 
 function openCreateClientType() {
 	refModalManageState.value.open()
 }
 
-function openEditClientType() {
-	refModalManageState.value.openEdit()
+function openEditClientType(row) {
+	refModalManageState.value.openEdit(row)
 }
 
 function openDeleteClientType(row) {
+	currentDeleteId.value = row.id;
 	refModalDeleteClientType.value.open()
 }
 
 async function handleDeleteClientType() {
-	
+	if (currentDeleteId.value != null) {
+		const { error } = await request(() => deleteCustomerType(currentDeleteId.value));
+		if (!error) {
+			await loadclientTypes();
+		}
+		currentDeleteId.value = null;
+	}
 }
+
 
 </script>
