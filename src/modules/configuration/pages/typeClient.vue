@@ -6,9 +6,9 @@
 			<div class="d-middle gap-x-4 w-[730px] m-6">
 				<img src="/img/illustrations/clientes.svg" alt="" class="size-[120px] min-w-[120px]">
 				<p class="f-t-12">Administra y configura las distintas etiquetas que puedes utilizar para clasificar y
-					segmentar a los clientes dentro del sistema. Esta funcionalidad te permite organizar la información
-					de manera más precisa, facilitar la búsqueda, mejorar el seguimiento comercial y optimizar la
-					gestión de clientes según sus características o estados.</p>
+					segmentar a los clientes dentro del sistema. Esta funcionalidad te permite organizar la informacion
+					de manera mas precisa, facilitar la busqueda, mejorar el seguimiento comercial y optimizar la
+					gestion de clientes segun sus caracteristicas o estados.</p>
 			</div>
 			<el-table :data="dataClientType" row-key="id" class="!w-fit table-sticky top-0">
 				<el-table-column label="Tipo de cliente" width="150">
@@ -19,7 +19,7 @@
 						</div>
 					</template>
 				</el-table-column>
-				<el-table-column label="Descripción" prop="description" width="355" />
+				<el-table-column label="Descripcion" prop="description" width="355" />
 				<el-table-column label="Usos" width="100" align="right">
 					<template #default="{ row }">
 						<div class="d-middle-end gap-x-1">
@@ -43,20 +43,19 @@
 		</el-scrollbar>
 		<Modal ref="refModalActiveClientType" action="Activar" cancel="Cancelar" title="Activar tipo de cliente"
 			width="360" :onAction="handleActiveClientType">
-			<p>¿Deseas activar este tipo de cliente? <br /> Al hacerlo, se habilitarán sus funciones en todo el sistema
+			<p>¿Deseas activar este tipo de cliente? <br /> Al hacerlo, se habilitaran sus funciones en todo el sistema
 			</p>
 		</Modal>
 		<Modal ref="refModalInactiveClientType" type="danger" action="Inactivar" cancel="Cancelar"
 			title="Inactivar tipo de cliente" width="360" woIcon :onAction="handleInactiveClientType">
-			<p>¿Deseas inactivar este tipo de cliente? <br /> Al hacerlo, se inhabilitarán sus funciones en todo el
+			<p>¿Deseas inactivar este tipo de cliente? <br /> Al hacerlo, se inhabilitaran sus funciones en todo el
 				sistema
 			</p>
 		</Modal>
 		<Modal ref="refModalDeleteClientType" type="danger" action="Eliminar" cancel="Cancelar"
 			title="Eliminar tipo de cliente" width="360" :onAction="handleDeleteClientType">
-			<p>¿Deseas eliminar este tipo de cliente? <br /> Esta acción es irreversible</p>
+			<p>Deseas eliminar este tipo de cliente? <br /> Esta accion es irreversible</p>
 		</Modal>
-		<!-- Se está utilizando el mismo modal para crear y editar de Estados de interés, cambiar lógica interna o separar a otro partial. -->
 		<modalManageState ref="refModalManageState" @update="loadclientTypes" />
 	</section>
 </template>
@@ -68,7 +67,6 @@ import modalManageState from '../partials/moadalManageType.vue';
 import { getCustomerTypes, deleteCustomerType, updateCustomerTypeState } from '../services/customerTypeService';
 import { request } from "@request";
 
-
 const refModalManageState = ref()
 const refModalDeleteClientType = ref()
 const refModalActiveClientType = ref()
@@ -77,9 +75,7 @@ const loading = ref(false);
 
 const router = useRouter();
 const currentToggleId = ref(null);
-const currentToggleState = ref(null);
 const currentDeleteId = ref(null);
-
 const dataClientType = ref([])
 
 const options = [
@@ -97,48 +93,52 @@ function goBack() {
 
 async function loadclientTypes() {
 	loading.value = true;
-	const { data, error } = await request(() => getCustomerTypes());
-	if (data && !error) {
-		// El backend puede devolver { data: [...] } o el array directamente
-		let array = Array.isArray(data) ? data : (data.data || []);
-		// Ordenar por state descendente (1 primero, 0 después)
-		array.sort((a, b) => b.state - a.state);
-		dataClientType.value = array;
+	try {
+		const { data, error } = await request(() => getCustomerTypes(), false);
+		if (error) {
+			dataClientType.value = [];
+			return;
+		}
+
+		const array = Array.isArray(data) ? data : (data?.data || []);
+		dataClientType.value = [...array].sort((a, b) => b.state - a.state);
+	} catch (e) {
+		dataClientType.value = [];
+	} finally {
+		loading.value = false;
 	}
-	loading.value = false;
 }
 
 function toggleState(row) {
 	currentToggleId.value = row.id;
-	currentToggleState.value = row.state;
 	if (row.state == 1) {
-		refModalActiveClientType.value.open()
-	} else {
 		refModalInactiveClientType.value.open()
+	} else {
+		refModalActiveClientType.value.open()
 	}
 	return false;
 }
 
 async function handleActiveClientType() {
-	if (currentToggleId.value != null) {
-		const { error } = await updateCustomerTypeState(currentToggleId.value, 1);
-		if (!error) {
-			await loadclientTypes();
-		}
-		currentToggleId.value = null;
-		currentToggleState.value = null;
-	}
+	if (currentToggleId.value == null) return;
+
+	const { error } = await request(() => updateCustomerTypeState(currentToggleId.value, 1));
+	if (error) return;
+
+	await loadclientTypes();
+	refModalActiveClientType.value.close();
+	currentToggleId.value = null;
 }
 
 async function handleInactiveClientType() {
-	if (currentToggleId.value != null) {
-		const { error } = await request(() => updateCustomerTypeState(currentToggleId.value, 0));
-		if (!error) {
-			await loadclientTypes();
-		}
-		currentToggleId.value = null;
-		currentToggleState.value = null;
-	}
+	if (currentToggleId.value == null) return;
+
+	const { error } = await request(() => updateCustomerTypeState(currentToggleId.value, 0));
+	if (error) return;
+
+	await loadclientTypes();
+	refModalInactiveClientType.value.close();
+	currentToggleId.value = null;
 }
 
 function openCreateClientType() {
@@ -155,14 +155,13 @@ function openDeleteClientType(row) {
 }
 
 async function handleDeleteClientType() {
-	if (currentDeleteId.value != null) {
-		const { error } = await request(() => deleteCustomerType(currentDeleteId.value));
-		if (!error) {
-			await loadclientTypes();
-		}
-		currentDeleteId.value = null;
-	}
+	if (currentDeleteId.value == null) return;
+
+	const { error } = await request(() => deleteCustomerType(currentDeleteId.value));
+	if (error) return;
+
+	await loadclientTypes();
+	refModalDeleteClientType.value.close();
+	currentDeleteId.value = null;
 }
-
-
 </script>
