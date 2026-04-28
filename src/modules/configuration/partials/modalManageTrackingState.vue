@@ -72,7 +72,8 @@
 import { ref } from 'vue';
 import { Field, Form } from 'vee-validate';
 import popoverPickerColor from '../components/popoverPickerColor.vue';
-import { createTrackingOpportunity, updateTrackingOpportunity } from '../services/trackingService';
+import { request } from '@request'
+import * as Service from '../services/trackingService';
 
 const emit = defineEmits(['update']);
 
@@ -130,9 +131,11 @@ async function handleSubmit() {
 		};
 
 		if (isAdd.value) {
-			await createTrackingOpportunity(payload);
+			const { error } = await request(() => Service.createTrackingOpportunity(payload));
+			if (error) throw error;
 		} else {
-			await updateTrackingOpportunity(isEdit.value, payload);
+			const { error } = await request(() => Service.updateTrackingOpportunity(isEdit.value, payload));
+			if (error) throw error;
 		}
 
 		close();

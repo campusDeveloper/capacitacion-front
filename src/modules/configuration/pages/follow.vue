@@ -40,11 +40,11 @@
 						:class="{ 'row-disabled': !row.state }" :before-change="() => confirmToggle(row)" />
 				</template>
 			</el-table-column>
-				<el-table-column width="55" align="center">
-					<template #default="{ row }">
-						<DropdownOptions :params="row" :options="options" placement="right" />
-					</template>
-				</el-table-column>
+			<el-table-column width="55" align="center">
+				<template #default="{ row }">
+					<DropdownOptions :params="row" :options="options" placement="right" />
+				</template>
+			</el-table-column>
 			</el-table>
 		</el-scrollbar>
 
@@ -75,13 +75,10 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { request } from '@request'
+import * as Service from '../services/trackingService'
 import modalManageTrackingState from '../partials/modalManageTrackingState.vue';
 import modalSeeTrackingStatus from '../partials/modalSeeTrackingStatus.vue';
-import {
-	getTrackingOpportunities,
-	toggleTrackingOpportunityState,
-	deleteTrackingOpportunity,
-} from '../services/trackingService';
 
 const refModalManageTrackingState = ref()
 const refModalActiveTrackingStatus = ref()
@@ -106,75 +103,94 @@ onMounted(() => {
 });
 
 async function loadTrackingStates() {
-  loading.value = true;
-  try {
-    const data = await getTrackingOpportunities();
-    if (data && Array.isArray(data)) {
-      dataOpportunityTracking.value = sortByState(data);
-    }
-  } catch (error) {
-    console.error('Error loading tracking states:', error);
-  } finally {
-    loading.value = false;
-  }
+   loading.value = true;
+   try {
+       const { data, error } = await request(() => Service.getTrackingOpportunities(), false);
+       if (error) {
+           dataOpportunityTracking.value = [];
+           return;
+       }
+
+       const states = normalizeTrackingList(data);
+       dataOpportunityTracking.value = [...states].sort((a, b) => b.state - a.state);
+   } catch (e) {
+       dataOpportunityTracking.value = [];
+   } finally {
+       loading.value = false;
+   }
 }
 function sortByState(list) {
-  return [...list].sort((a, b) => b.state - a.state);
+   return [...list].sort((a, b) => b.state - a.state);
+}
+
+function normalizeTrackingList(payload) {
+	const candidates = [
+		payload?.data,
+		payload?.items,
+		payload?.trackingOpportunities,
+		payload,
+	];
+
+	for (const candidate of candidates) {
+		if (Array.isArray(candidate)) {
+			return sortByState(candidate);
+		}
+	}
+
+	return [];
 }
 
 function confirmToggle(row) {
-  return new Promise((resolve) => {
-    currentToggleId.value = row.id;
-    modalResolveCallback.value = resolve;
-    if (row.state === 1) {
-      refModalInactiveTrackingStatus.value.open();
-    } else {
-      refModalActiveTrackingStatus.value.open();
-    }
-  });
+   return new Promise((resolve) => {
+       currentToggleId.value = row.id;
+       modalResolveCallback.value = resolve;
+       if (row.state === 1) {
+           refModalInactiveTrackingStatus.value.open();
+       } else {
+           refModalActiveTrackingStatus.value.open();
+       }
+   });
 }
 
 async function handleActiveTrackingStatus() {
-  if (!currentToggleId.value) return;
+   if (!currentToggleId.value) return false;
 
-  try {
-    await toggleTrackingOpportunityState(currentToggleId.value);
-    resolveToggle(true);
-    await loadTrackingStates();
+   const { error } = await request(() => Service.toggleTrackingOpportunityState(currentToggleId.value));
+   if (error) {
+       resolveToggle(false);
+       return false;
+   }
+   resolveToggle(true);
+   await loadTrackingStates();
 	refModalActiveTrackingStatus.value.close();
-  } catch (error) {
-    console.error('Error activating tracking state:', error);
-    resolveToggle(false);
-  } finally {
-    currentToggleId.value = null;
-  }
+	currentToggleId.value = null;
+	return true;
 }
 
 async function handleInactiveTrackingStatus() {
-  if (!currentToggleId.value) return;
+   if (!currentToggleId.value) return false;
 
-  try {
-    await toggleTrackingOpportunityState(currentToggleId.value);
-    resolveToggle(true);
-    await loadTrackingStates();
+   const { error } = await request(() => Service.toggleTrackingOpportunityState(currentToggleId.value));
+   if (error) {
+       resolveToggle(false);
+       return false;
+   }
+   resolveToggle(true);
+   await loadTrackingStates();
 	refModalInactiveTrackingStatus.value.close();
-  } catch (error) {
-    console.error('Error deactivating tracking state:', error);
-    resolveToggle(false);
-  } finally {
-    currentToggleId.value = null;
-  }
+	currentToggleId.value = null;
+	return true;
 }
 
 function onCancelToggle() {
-  resolveToggle(false);
-  currentToggleId.value = null;
+   resolveToggle(false);
+   currentToggleId.value = null;
 }
 
 function resolveToggle(value) {
-  if (!modalResolveCallback.value) return;
-  modalResolveCallback.value(value);
-  modalResolveCallback.value = null;
+   if (!modalResolveCallback.value) return;
+   modalResolveCallback.value(value);
+   modalResolveCallback.value = null;
 }
 
 function goBack() {
@@ -199,20 +215,16 @@ function openDeleteTrackingState(row) {
 }
 
 async function handleDeleteTrackingStatus() {
-  if (!currentDeleteId.value) return;
+   if (!currentDeleteId.value) return;
 
-  try {
-    await deleteTrackingOpportunity(currentDeleteId.value);
-    refModalDeleteTrackingStatus.value.close();
-    currentDeleteId.value = null;
-    await loadTrackingStates();
-  } catch (error) {
-    console.error('Error deleting tracking state:', error);
-  }
+   const { error } = await request(() => Service.deleteTrackingOpportunity(currentDeleteId.value));
+   if (error) return;
+   refModalDeleteTrackingStatus.value.close();
+   currentDeleteId.value = null;
+   await loadTrackingStates();
 }
 
 function resetDeleteTrackingStatus() {
 	currentDeleteId.value = null;
 }
-
 </script>

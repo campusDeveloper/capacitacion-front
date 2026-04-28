@@ -68,12 +68,8 @@
 <script setup>
 import { ref } from 'vue';
 import popoverPickerColor from '../components/popoverPickerColor.vue';
-import {
-	getTrackingOpportunityDetail,
-	createSubState,
-	updateSubState,
-	deleteSubState
-} from '../services/trackingService';
+import { request } from '@request'
+import * as Service from '../services/trackingService';
 
 const emit = defineEmits(['update']);
 
@@ -100,15 +96,15 @@ const newChildForm = ref({
 async function loadTrackingChildren(parentId) {
 	loading.value = true;
 	try {
-		const response = await getTrackingOpportunityDetail(parentId);
-		const detail = response?.data?.data || response?.data;
-		console.log('[loadTrackingChildren] Received detail:', detail);
-		// Extract children from the detail response - backend returns parent with nested children
-		const children = detail?.children || detail?.subStates || detail?.opportunityTrackingChildren || detail?.trackingChildren || [];
-		console.log('[loadTrackingChildren] Extracted children:', children);
-		dataOpportunityTrackingDetail.value = Array.isArray(children) ? children : [];
+		const { data, error } = await request(() => Service.getTrackingOpportunityDetail(parentId), false);
+		if (error) {
+			dataOpportunityTrackingDetail.value = [];
+			return;
+		}
+
+		const detail = normalizeTrackingDetail(data);
+		dataOpportunityTrackingDetail.value = normalizeTrackingChildren(detail);
 	} catch (error) {
-		console.error('Error loading tracking children:', error);
 		dataOpportunityTrackingDetail.value = [];
 	} finally {
 		loading.value = false;
@@ -118,46 +114,29 @@ async function loadTrackingChildren(parentId) {
 async function addContent() {
 	if (!newChildForm.value.name || !newChildForm.value.color || !parentRow.value?.id) return;
 
-	try {
-		await createSubState(parentRow.value.id, {
-			name: newChildForm.value.name,
-			color: newChildForm.value.color,
-			state: 1,
-		});
+	const { error } = await request(() => Service.createSubState(parentRow.value.id, {
+		name: newChildForm.value.name,
+		color: newChildForm.value.color,
+		state: 1,
+	}));
+	if (error) return;
 
-        resetNewChildForm();
-        await loadTrackingChildren(parentRow.value.id);
-        emit('update');
-	} catch (error) {
-		console.error('Error adding child state:', {
-			status: error?.response?.status,
-			data: error?.response?.data,
-			message: error?.message,
-			parentId: parentRow.value?.id
-		});
-	}
+    resetNewChildForm();
+    await loadTrackingChildren(parentRow.value.id);
+    emit('update');
 }
 
 function openEditChild(index) {
 	const child = dataOpportunityTrackingDetail.value[index];
-	if (!child) {
-		console.log('[openEditChild] No child at index', index);
-		return;
-	}
+	if (!child) return;
 
 	const childId = getChildId(child);
-	console.log('[openEditChild] Child data:', child, 'Extracted childId:', childId);
-
-	if (!childId) {
-		console.log('[openEditChild] childId is falsy');
-		return;
-	}
+	if (!childId) return;
 
 	isEdit.value = index;
 	currentEditId.value = childId;
 	editForm.value.name = child.name;
 	editForm.value.color = child.color;
-	console.log('[openEditChild] Edit state set:', { isEdit: index, currentEditId: childId, name: child.name, color: child.color });
 }
 
 function cancelEdit() {
@@ -168,73 +147,38 @@ function cancelEdit() {
 }
 
 async function handleUpdateChild() {
-	console.log('[handleUpdateChild] Validation check:', {
+	if (!editForm.value.name || !editForm.value.color || !currentEditId.value) return;
+
+	const { error } = await request(() => Service.updateSubState(parentRow.value.id, currentEditId.value, {
 		name: editForm.value.name,
 		color: editForm.value.color,
-		currentEditId: currentEditId.value,
-		parentRow: parentRow.value
-	});
+	}));
+	if (error) return;
 
-	if (!editForm.value.name || !editForm.value.color || !currentEditId.value) {
-		console.log('[handleUpdateChild] Validation FAILED');
-		return;
-	}
-
-	try {
-		await updateSubState(parentRow.value.id, currentEditId.value, {
-			name: editForm.value.name,
-			color: editForm.value.color,
-		});
-
-		cancelEdit();
-		await loadTrackingChildren(parentRow.value.id);
-		emit('update');
-	} catch (error) {
-		console.error('Error updating child state:', {
-			status: error?.response?.status,
-			data: error?.response?.data,
-			message: error?.message,
-			childId: currentEditId.value
-		});
-	}
+	cancelEdit();
+	await loadTrackingChildren(parentRow.value.id);
+	emit('update');
 }
 
 function openDeleteChild(childId) {
-	console.log('[openDeleteChild] Received childId:', childId);
-	if (!childId) {
-		console.log('[openDeleteChild] childId is falsy, aborting');
-		return;
-	}
+	if (!childId) return;
 	currentDeleteId.value = childId;
 	refModalDeleteTrackingStatus.value.open();
 }
 
 async function handleDeleteTrackingStatus() {
-	console.log('[handleDeleteTrackingStatus] Validation check:', {
-		currentDeleteId: currentDeleteId.value,
-		parentRow: parentRow.value
-	});
-
 	if (!currentDeleteId.value) {
-		console.log('[handleDeleteTrackingStatus] Validation FAILED');
 		resetDeleteTrackingStatus();
 		return;
 	}
 
-	try {
-		await deleteSubState(parentRow.value.id, currentDeleteId.value);
-		refModalDeleteTrackingStatus.value.close();
-		resetDeleteTrackingStatus();
-		await loadTrackingChildren(parentRow.value.id);
-		emit('update');
-	} catch (error) {
-		console.error('Error deleting child state:', {
-			status: error?.response?.status,
-			data: error?.response?.data,
-			message: error?.message,
-			childId: currentDeleteId.value
-		});
-	}
+	const { error } = await request(() => Service.deleteSubState(parentRow.value.id, currentDeleteId.value));
+	if (error) return;
+
+	refModalDeleteTrackingStatus.value.close();
+	resetDeleteTrackingStatus();
+	await loadTrackingChildren(parentRow.value.id);
+	emit('update');
 }
 
 async function open(row) {
@@ -255,14 +199,30 @@ function resetDeleteTrackingStatus() {
 }
 
 function getChildId(child) {
-	if (!child) {
-		console.log('[getChildId] Child is null/undefined');
-		return null;
+	if (!child) return null;
+	return child.idTracking ?? child.id ?? child.idChild ?? child.childId ?? null;
+}
+
+function normalizeTrackingDetail(payload) {
+	return payload?.data ?? payload?.item ?? payload?.trackingOpportunity ?? payload ?? null;
+}
+
+function normalizeTrackingChildren(detail) {
+	const candidates = [
+		detail?.children,
+		detail?.subStates,
+		detail?.opportunityTrackingChildren,
+		detail?.trackingChildren,
+		detail?.data,
+	];
+
+	for (const candidate of candidates) {
+		if (Array.isArray(candidate)) {
+			return candidate;
+		}
 	}
-	// According to backend response, the field is 'idTracking'
-	const id = child.idTracking;
-	console.log('[getChildId] Child object keys:', Object.keys(child), 'idTracking value:', id);
-	return id ?? null;
+
+	return [];
 }
 
 function handleClose() {
