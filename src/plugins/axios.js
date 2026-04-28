@@ -2,9 +2,9 @@ import axios from 'axios'
 import Cookies from 'js-cookie';
 import router from '../shared/router/index';
 
-
-axios.defaults.baseURL =  import.meta.env.VITE_BASE_URL;
-axios.defaults.withCredentials = true
+// Base URL para todas las llamadas a la API
+axios.defaults.baseURL = '/api';
+axios.defaults.withCredentials = true;
 
 axios.interceptors.request.use(request => {
     const token = Cookies.get('token');
