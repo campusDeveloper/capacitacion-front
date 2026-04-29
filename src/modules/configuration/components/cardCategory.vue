@@ -59,6 +59,11 @@ import cardKnowledge from './cardKnowledge.vue'
 import { Field, Form } from 'vee-validate';
 import { request } from "@request"
 import DragAndDropFile from '@comp/DragAndDropFile.vue';
+import {
+    createKnowledgeDocByIdKnowledge,
+    changeDocStateById,
+    deleteDocById as deleteDocByIdService,
+} from '../services/knowledgeService';
 
 //refs
 const refModalManageKnowledge = ref();
@@ -88,36 +93,42 @@ const props = defineProps({
 })
 
 const options = ref([
-	{ option: 'Editar', action: openEditCategory, icon: 'icon-edit-2' },
-	{ option: 'Eliminar', action: openDeleteCategory, icon: 'icon-trash', danger: true },
+    { option: 'Editar', action: openEditCategory, icon: 'icon-edit-2' },
+    { option: 'Eliminar', action: openDeleteCategory, icon: 'icon-trash', danger: true },
 ])
 
 // Functions
 
 function deleteFile() {
-	refDragAndDrop.value.deleteElement()
+    refDragAndDrop.value.deleteElement()
 }
 
 // Handlers
 function openCreateKnowledge() {
-   
+    isCreateKnowledge.value = true
+    idDocRef.value = null
+    document.value = { name: null, file: null }
     refModalManageKnowledge.value.open()
 }
 
-function onDeleteDocument() {
-    refModalDeleteKnowledge.value.open();
+function onDeleteDocument(doc) {
+    idDocRef.value = doc?.idDoc
+    refModalDeleteKnowledge.value.open()
 }
 
-function onChangeState() {
+function onChangeState(doc) {
+    idDocRef.value = doc?.idDoc
 
-    if (1) {
-        refModalInactiveKnowledge.value.open();
+    console.log("DOC:", doc)
+    console.log("STATE:", doc?.state)
+
+    if (Number(doc?.state) === 1) {
+        refModalInactiveKnowledge.value.open()
     } else {
-        refModalActiveKnowledge.value.open();
+        refModalActiveKnowledge.value.open()
     }
 }
 
-// Emitters
 function openChangeState() {
     emit("onChangeState", props.category)
     return false
@@ -129,5 +140,48 @@ function openEditCategory() {
 
 function openDeleteCategory() {
     emit('onDelete', props.category)
+}
+
+async function createDocByKnowledgeId() {
+    const valid = await refFormCreateKnowledge.value?.validate()
+    if (!valid?.valid) return false
+
+    const payload = {
+        name: document.value.name,
+        file: document.value.file,
+    }
+
+    const { error } = await request(
+        () => createKnowledgeDocByIdKnowledge(props.category.idKnowledge, payload),
+        true
+    )
+    if (error) return false
+    refModalManageKnowledge.value.close()
+    document.value = { name: null, file: null }
+    emit('onChangeState', { type: 'doc' })
+    return true
+}
+
+async function deleteDocById() {
+    const { error } = await request(
+        () => deleteDocByIdService(idDocRef.value),
+        true
+    )
+    if (error) return false
+    refModalDeleteKnowledge.value.close()
+    emit('onChangeState', { type: 'doc' })
+    return true
+}
+
+async function updateDocStateById() {
+    const { error } = await request(
+        () => changeDocStateById(idDocRef.value),
+        true
+    )
+    if (error) return false
+    refModalActiveKnowledge.value.close()
+    refModalInactiveKnowledge.value.close()
+    emit('onChangeState', { type: 'doc' })
+    return true
 }
 </script>

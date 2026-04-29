@@ -50,7 +50,8 @@ function formatDateWithMayus(date, format = 'DD MMM YYYY') {
 }
 
 function openDocument() {
-    refModalPDF.value.open();
+    if (!props.data?.file) return;
+    refModalPDF.value.open(props.data.file);
 }
 
 // Emitters

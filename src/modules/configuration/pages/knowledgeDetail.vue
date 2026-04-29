@@ -50,20 +50,24 @@ import { useRoute, useRouter } from 'vue-router';
 import { Field } from 'vee-validate';
 import { request } from "@request"
 import cardCategory from '../components/cardCategory.vue'
+import {
+    getHeadquarterKnowledgeList,
+    createHeadquarterKnowledge as createHeadquarterKnowledgeService,
+    updateHeadquarterKnowledgeById as updateHeadquarterKnowledgeByIdService,
+    changeHeadquarterKnowledgeStateById,
+    deleteHeadquarterKnowledgeById as deleteHeadquarterKnowledgeByIdService,
+} from '../services/knowledgeService';
 
-// Routers
 const router = useRouter();
 const route = useRoute()
 
-// Refs
 const refModalManageCategory = ref();
 const refModalDeleteCategory = ref();
 const refModalActiveCategory = ref();
 const refModalInactiveCategory = ref();
 
 const isCreate = ref(true);
-
-const idHeadquarter = 1
+const idHeadquarter = ref(route.params.id === 'general' ? null : Number(route.params.id ?? 1))
 
 const idKnowledgeRef = ref(null)
 const modelCategory = ref({
@@ -73,62 +77,108 @@ const modelCategory = ref({
 
 const loading = ref(false)
 
-const headquarterDetail = ref(
-    {
-        headquarterKnowledges: [
-            {
-                idKnowledge: 1,
-                title: 'Conocimiento 1',
-                description: 'Descripción del conocimiento 1',
-                state: 1,
-                docs: []
-            },
-            {
-                idKnowledge: 2,
-                title: 'Conocimiento 2',
-                description: 'Descripción del conocimiento 2',
-                state: 0,
-                docs: []
-            },
-            {
-                idKnowledge: 3,
-                title: 'Conocimiento 3',
-                description: 'Descripción del conocimiento 3',
-                state: 1,
-                docs: []
-            }
-        ]
-    }
-)
+const headquarterDetail = ref({
+    nameHeadquarter: '',
+    headquarterKnowledges: []
+})
 
-
-// Handlers
 function openCreateCategory() {
-   
+    isCreate.value = true
+    idKnowledgeRef.value = null
+    modelCategory.value = { title: null, description: null }
     refModalManageCategory.value.open()
 }
 
-function openEditCategory() {
-   
+function openEditCategory(category) {
+    isCreate.value = false
+    idKnowledgeRef.value = category?.idKnowledge
+    modelCategory.value = {
+        title: category?.title ?? null,
+        description: category?.description ?? null
+    }
     refModalManageCategory.value.open()
 }
 
-function onDeleteCategory() {
-    
+function onDeleteCategory(category) {
+    idKnowledgeRef.value = category?.idKnowledge
     refModalDeleteCategory.value.open()
 }
 
-function onChangeState() {
+function onChangeState(payload) {
+    if (payload?.type === 'doc') {
+        loadHeadquarterDetail()
+        return
+    }
+    idKnowledgeRef.value = payload?.idKnowledge
 
-    if ( 1) {
+    if (payload?.state === 1) {
         refModalInactiveCategory.value.open()
     } else {
         refModalActiveCategory.value.open()
     }
 }
 
-/* Functions */
 function goBack() {
     router.go(-1)
 }
+
+async function loadHeadquarterDetail() {
+    loading.value = true
+    const idQuery = idHeadquarter.value === null ? 'general' : idHeadquarter.value
+    const { data, error } = await request(() => getHeadquarterKnowledgeList(idQuery), { success: false, error: true })
+    loading.value = false
+    if (error) return
+
+    headquarterDetail.value = data?.data || { nameHeadquarter: '', headquarterKnowledges: [] }
+}
+
+async function createHeadquarterKnowledge() {
+    const payload = {
+        title: modelCategory.value.title,
+        description: modelCategory.value.description,
+        idHeadquarter: idHeadquarter.value,
+        type: idHeadquarter.value === null ? 2 : 1,
+    }
+
+    const { error } = await request(() => createHeadquarterKnowledgeService(payload), true)
+    if (error) return false
+    refModalManageCategory.value.close()
+    await loadHeadquarterDetail()
+    return true
+}
+
+async function updateHeadquarterKnowledgeById() {
+    const payload = {
+        title: modelCategory.value.title,
+        description: modelCategory.value.description,
+    }
+
+    const { error } = await request(
+        () => updateHeadquarterKnowledgeByIdService(idKnowledgeRef.value, payload),
+        true
+    )
+    if (error) return false
+    refModalManageCategory.value.close()
+    await loadHeadquarterDetail()
+    return true
+}
+
+async function updateHeadquarterKnowledgeStateById() {
+    const { error } = await request(() => changeHeadquarterKnowledgeStateById(idKnowledgeRef.value), true)
+    if (error) return false
+    refModalActiveCategory.value.close()
+    refModalInactiveCategory.value.close()
+    await loadHeadquarterDetail()
+    return true
+}
+
+async function deleteHeadquarterKnowledgeById() {
+    const { error } = await request(() => deleteHeadquarterKnowledgeByIdService(idKnowledgeRef.value), true)
+    if (error) return false
+    refModalDeleteCategory.value.close()
+    await loadHeadquarterDetail()
+    return true
+}
+
+onBeforeMount(loadHeadquarterDetail)
 </script>
