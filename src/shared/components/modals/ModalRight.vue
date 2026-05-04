@@ -3,7 +3,7 @@
 		<template #header>
 			<div class="d-middle-bt ps-3.5 pe-4 text-[rgb(var(--xx-color-text-primary))]">
 				<h4 class="textf-ts-20 mb-0">{{ title }}</h4>
-                <i class="icon-close !text-xl text-[rgb(var(--xx-color-icons-primary))]" @click="close" />
+                <i class="icon-close !text-xl text-[rgb(var(--xx-color-icons-primary))]" @click="close"></i>
 			</div>
 		</template>
 		<template #default>
@@ -47,7 +47,7 @@ const props = defineProps({
 	}
 })
 
-const emit = defineEmits(['closeDrawer'])
+const emit = defineEmits(['close', 'closeDrawer'])
 
 const dialogVisible = ref(false);
 
@@ -59,6 +59,7 @@ function close(resetForm) {
 }
 
 function closeDrawer(){
+	emit('close')
 	emit('closeDrawer')
 }
 
