@@ -1,27 +1,36 @@
 <template>
 	<ModalRight ref="refModalManageState"
-		:title="`${isAdd ? 'Crear' : 'Editar'} ${isClientType ? 'tipo de cliente' : 'estado de interés'}`"
+		:title="`${isAdd ? 'Crear' : 'Editar'} ${isClientType ? 'tipo de cliente' : 'estado de interes'}`"
 		destroyOnClose>
-		<p class="f-t-14">Agrega un título y un color para {{ isClientType ? 'la etiqueta' : 'crear/actualizar el estado'
+		<p class="f-t-14">Agrega un titulo y un color para {{ isClientType ? 'la etiqueta' : 'crear/actualizar el estado'
 			}} </p>
 		<Form ref="refFormState" :initial-values="form">
-			<Field v-slot="{ field, errorMessage }" name="name" label="título" rules="required|max:40">
-				<p class="f-tm-14 mt-5 pb-1">Título</p>
-				<el-input v-model="form.name" placeholder="Agrega un título" size="large" v-bind="field" />
-				<Error :local="errorMessage" server="name" v-bind="field" />
+			<Field v-slot="{ field, errorMessage, handleChange, handleBlur }" name="name" label="titulo"
+				rules="required|max:40">
+				<p class="f-tm-14 mt-5 pb-1">Titulo</p>
+				<el-input :model-value="form.name" :name="field.name" placeholder="Agrega un titulo" size="large"
+					@update:model-value="(value) => handleNameChange(value, handleChange)" @blur="handleBlur" />
+				<Error :local="errorMessage" server="name" :value="form.name" />
 			</Field>
-			<p class="f-tm-14 mt-5 pb-1">Descripción</p>
-			<el-input type="textarea" v-model="form.description" placeholder="Agrega una descripción"
-				:autosize="{ minRows: 4, maxRows: 4 }" :maxlength="200" />
+			<Field v-slot="{ field, errorMessage, handleChange, handleBlur }" name="description" label="descripcion"
+				:rules="`required|max:${descriptionMaxLength}`">
+				<p class="f-tm-14 mt-5 pb-1">Descripcion</p>
+				<el-input type="textarea" :model-value="form.description" :name="field.name"
+					placeholder="Agrega una descripcion" :autosize="{ minRows: 4, maxRows: 4 }"
+					:maxlength="descriptionMaxLength" show-word-limit
+					@update:model-value="(value) => handleDescriptionChange(value, handleChange)" @blur="handleBlur" />
+				<Error :local="errorMessage" server="description" :value="form.description" />
+			</Field>
 			<div class="d-middle-center rounded-lg h-[29px] w-[64px] mx-auto mt-5 text-white-100 f-t-14"
 				:style="{ backgroundColor: form.color }">
 				Estado
 			</div>
-			<Field v-slot="{ field, errorMessage }" name="color" label="color" rules="required">
+			<Field v-slot="{ field, errorMessage, handleChange }" name="color" label="color" rules="required">
 				<div class="d-middle-center">
-					<ColorPicker v-model="form.color" v-bind="field" />
+					<ColorPicker :model-value="form.color" :name="field.name"
+						@update:model-value="(value) => handleColorChange(value, handleChange)" />
 				</div>
-				<Error :local="errorMessage" server="color" v-bind="field" />
+				<Error :local="errorMessage" server="color" :value="form.color" />
 			</Field>
 		</Form>
 		<template #footer>
@@ -36,6 +45,7 @@
 
 <script setup>
 import { ref } from 'vue';
+import { ElMessage } from 'element-plus'
 import { Field, Form } from 'vee-validate'
 import ColorPicker from '@comp/ColorPicker.vue'
 import { request } from '../../../services/http'
@@ -45,9 +55,11 @@ const refModalManageState = ref()
 const refFormState = ref()
 const emit = defineEmits(['update'])
 
+const descriptionMaxLength = 200
 const isAdd = ref(true)
 const isClientType = ref(false)
 const idState = ref(null)
+const hasShownDescriptionLimit = ref(false)
 const form = ref({
 	name: '',
 	description: '',
@@ -65,7 +77,34 @@ function resetFormData() {
 	}
 }
 
-/* Functions */
+function handleDescriptionInput(value = '') {
+	if (value.length >= descriptionMaxLength && !hasShownDescriptionLimit.value) {
+		hasShownDescriptionLimit.value = true
+		ElMessage.warning(`La descripcion no puede superar los ${descriptionMaxLength} caracteres.`)
+		return
+	}
+
+	if (value.length < descriptionMaxLength) {
+		hasShownDescriptionLimit.value = false
+	}
+}
+
+function handleDescriptionChange(value, handleChange) {
+	form.value.description = value
+	handleChange(value)
+	handleDescriptionInput(value)
+}
+
+function handleNameChange(value, handleChange) {
+	form.value.name = value
+	handleChange(value)
+}
+
+function handleColorChange(value, handleChange) {
+	form.value.color = value
+	handleChange(value)
+}
+
 async function handleInterestState() {
 	const isValid = await refFormState.value?.validate()
 	if (!isValid?.valid) return
@@ -91,6 +130,8 @@ async function handleInterestState() {
 function open(identify = false) {
 	isAdd.value = true
 	isClientType.value = identify
+	hasShownDescriptionLimit.value = false
+	refFormState.value?.resetForm()
 	resetFormData()
 	refModalManageState.value.open()
 }
@@ -98,6 +139,7 @@ function open(identify = false) {
 function openEdit(data = {}, identify = false) {
 	isAdd.value = false
 	isClientType.value = identify
+	hasShownDescriptionLimit.value = false
 	idState.value = data?.id ?? null
 	form.value = {
 		name: data?.name ?? '',
@@ -105,10 +147,14 @@ function openEdit(data = {}, identify = false) {
 		color: data?.color ?? null,
 		state: data?.state ?? 1
 	}
+	refFormState.value?.resetForm({
+		values: { ...form.value }
+	})
 	refModalManageState.value.open()
 }
 
 function close() {
+	hasShownDescriptionLimit.value = false
 	refFormState.value?.resetForm()
 	resetFormData()
 	refModalManageState.value.close()
