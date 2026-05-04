@@ -27,6 +27,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { request } from "@request"
+import { changeHeadquarterStateById } from '../services/knowledgeService';
 
 const loading = ref(false)
 
@@ -44,13 +45,13 @@ const props = defineProps({
     }
 })
 
-/* Async Functions */
 function handleChangeState() {
     if (props.data.state === 1) {
         openInactive()
     } else {
         openActive()
     }
+    return false
 }
 
 function openActive() {
@@ -61,8 +62,21 @@ function openInactive() {
     refModalInactive.value.open();
 }
 
+async function updateHeadquarterStateById() {
+    loading.value = true
+    const { error } = await request(() => changeHeadquarterStateById(props.data.idHeadquarter), true)
+    loading.value = false
+    if (error) return false
+
+    props.data.state = props.data.state === 1 ? 0 : 1
+    refModalActive.value.close()
+    refModalInactive.value.close()
+    return true
+}
+
 function goToDetail() {
-    router.push({ name: 'configuration.knowledge', params: { id : 1} })
+    const id = props.isGeneral ? 'general' : props.data.idHeadquarter
+    router.push({ name: 'configuration.knowledge', params: { id } })
 }
 
 </script>

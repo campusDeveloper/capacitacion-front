@@ -13,33 +13,31 @@ import { ref, onBeforeMount } from 'vue';
 import cardHeardquarter from '../components/cardHeardquarter.vue';
 import { useRouter } from 'vue-router';
 import { request } from "@request"
+import { getHeadquarters } from '../services/knowledgeService';
 
 const router = useRouter();
 
 const loading = ref(false)
 
 const generalHeadQuarter = ref(undefined)
-
-const headquarters = ref([
-    {
-        idHeadquarter: 1,
-        name: 'Sede Principal',
-        categories: 5,
-        docs: 20,
-        state: 1
-    },
-    {
-        idHeadquarter: 2,
-        name: 'Sede Norte',
-        categories: 3,
-        docs: 10,
-        state: 0
-    },
-])
+const headquarters = ref([])
 
 
 // Functions
 function goBack() {
     router.push({ name: 'configuration.main' })
 }
+
+async function loadHeadquarters() {
+    loading.value = true
+    const { data, error } = await request(() => getHeadquarters(), { success: false, error: true })
+    loading.value = false
+    if (error) return
+
+    const rows = Array.isArray(data?.data) ? data.data : []
+    generalHeadQuarter.value = rows.find((row) => row.idHeadquarter === null)
+    headquarters.value = rows.filter((row) => row.idHeadquarter !== null)
+}
+
+onBeforeMount(loadHeadquarters)
 </script>
