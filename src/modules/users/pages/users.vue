@@ -47,7 +47,7 @@
 			<br />
 			<p>Recuerda que también puedes inactivarlo para deshabilitar sus funciones en el sistema</p>
 		</Modal>
-		<modalManageUser ref="refModalManageUser" @createUser="getLoadUsers" @editUser="getLoadUsers" />
+		<modalManageUser ref="refModalManageUser" @success="getLoadUsers" />
 		<modalEditSedes ref="refModalEditSedes" @editUser="getLoadUsers" />
 		<modalPermissionSettings ref="refModalPermissionSettings" />
 	</section>

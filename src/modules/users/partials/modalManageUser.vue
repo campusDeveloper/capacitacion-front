@@ -89,11 +89,14 @@
 import { ref } from 'vue';
 import { Form, Field } from 'vee-validate'
 import { request } from '@request'
+import { getHeadquarters } from '../../configuration/services/knowledgeService';
+import { createUser } from '../services/userService';
 
 const refModalManageUser = ref()
 const refFormManage = ref()
 const isCreate = ref(1);
 const isLoaded = ref(false)
+const emit = defineEmits(['success'])
 
 const model = ref({
     name: null,
@@ -115,16 +118,71 @@ const secondarySede = ref([])
 const editingUserId = ref(null);
 
 /* Functions */
-function onSubmitClient() {
- 
+function resetFormData() {
+    model.value = {
+        name: null,
+        email: null,
+        password: null,
+        specialAgent: 0,
+        paymentAgent: 0,
+        idRol: 1,
+        idSede: null
+    }
+    secondarySede.value = []
+    editingUserId.value = null
 }
 
+async function loadHeadquarters() {
+    const { data, error } = await request(() => getHeadquarters(), { success: false, error: true })
+    if (error) return
 
-async function open() {
-   refModalManageUser.value.open()
+    const rows = Array.isArray(data?.data) ? data.data : []
+    optionsSede.value = rows.filter((item) => item.idHeadquarter !== null)
+    secondarySede.value = optionsSede.value.map((item) => ({
+        ...item,
+        value: 0
+    }))
+}
+
+async function onSubmitClient() {
+    const validationResult = await refFormManage.value?.validate()
+    if (!validationResult?.valid) return
+
+    const payload = {
+        name: model.value.name?.trim(),
+        email: model.value.email?.trim(),
+        password: model.value.password,
+        type: model.value.idRol,
+        mainHeadquarter: model.value.idSede,
+        headquarters: secondarySede.value
+            .filter((item) => item.value === 1)
+            .map((item) => item.idHeadquarter),
+        specialAgent: model.value.specialAgent ? 1 : 0,
+        paymentAgent: model.value.paymentAgent ? 1 : 0
+    }
+
+    const { error } = await request(() => createUser(payload))
+    if (error) return
+
+    close()
+    emit('success')
+}
+
+async function open(type = 1) {
+    isCreate.value = type
+    isLoaded.value = false
+    refFormManage.value?.resetForm()
+    resetFormData()
+    await loadHeadquarters()
+    isLoaded.value = true
+    refModalManageUser.value.open()
 }
 
 function onSedeChange() {
+    secondarySede.value = secondarySede.value.map((item) => ({
+        ...item,
+        value: item.idHeadquarter === model.value.idSede ? 0 : item.value
+    }))
 }
 
 function close() {
