@@ -2,8 +2,6 @@ import axios from 'axios'
 import Cookies from 'js-cookie';
 import router from '../shared/router/index';
 
-// Base URL para todas las llamadas a la API
-axios.defaults.baseURL = '/api';
 axios.defaults.withCredentials = true;
 
 axios.interceptors.request.use(request => {
