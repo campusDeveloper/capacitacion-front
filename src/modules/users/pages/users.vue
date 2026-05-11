@@ -60,6 +60,7 @@ import modalEditSedes from '../partials/modalEditSedes.vue';
 import modalPermissionSettings from '../partials/modalPermissionSettings.vue';
 import userCard from '../components/userCard.vue';
 import { request } from '@request'
+import { getUsers, deleteUser} from '../services/userService';
 
 const refModalActiveUser = ref()
 const refModalInactiveUser = ref()
@@ -71,6 +72,7 @@ const refModalPermissionSettings = ref()
 const userTypeFilter = ref(null)
 const search = ref(null)
 const usersData = ref([])
+const userToDeleteId = ref(null)
 
 const currentToggleId = ref(null)
 const currentDeleteId = ref(null)
@@ -88,6 +90,17 @@ const userTypeOptions = ref([
 
 let searchTimeout = null;
 
+async function getLoadUsers() {
+	const { data, error } = await request(() => getUsers());
+
+	if (error) return;
+	usersData.value = data?.data || [];
+}
+
+onBeforeMount(() => {
+	getLoadUsers();
+});
+
 function openCreateUser() {
 	refModalManageUser.value.open(1)
 }
@@ -95,17 +108,26 @@ function openCreateUser() {
 function openConfigPermissions() {
 	refModalPermissionSettings.value.open()
 }
-
-function openEditUser() {
-	refModalManageUser.value.open()
+//
+function openEditUser(user) {
+	refModalManageUser.value.open(2, user)
 }
 
-function openDeleteUser() {
+function openDeleteUser(user) {
+	userToDeleteId.value = user.id
 	refModalDeleteUser.value.open()
 }
 
 async function handleDeleteUser() {
-	
+	const { error } = await request(() => deleteUser(userToDeleteId.value));
+    
+    if (error) {
+        console.error("Hubo un error al eliminar");
+        return;
+    }
+    refModalDeleteUser.value.close();
+
+	getLoadUsers();
 }
 
 function openEditSedes() {
@@ -129,9 +151,6 @@ async function handleActiveUser() {
 }
 
 function openLinkForza() {
-}
-
-function deleteUser() {
 }
 
 function toggleUserState() {

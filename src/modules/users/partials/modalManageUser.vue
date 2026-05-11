@@ -91,6 +91,7 @@ import { Form, Field } from 'vee-validate'
 import { request } from '@request'
 import { getHeadquarters } from '../../configuration/services/knowledgeService';
 import { createUser } from '../services/userService';
+import { updateUser } from '../services/userService';
 
 const refModalManageUser = ref()
 const refFormManage = ref()
@@ -143,7 +144,7 @@ async function loadHeadquarters() {
         value: 0
     }))
 }
-
+//
 async function onSubmitClient() {
     const validationResult = await refFormManage.value?.validate()
     if (!validationResult?.valid) return
@@ -151,7 +152,6 @@ async function onSubmitClient() {
     const payload = {
         name: model.value.name?.trim(),
         email: model.value.email?.trim(),
-        password: model.value.password,
         type: model.value.idRol,
         mainHeadquarter: model.value.idSede,
         headquarters: secondarySede.value
@@ -161,19 +161,53 @@ async function onSubmitClient() {
         paymentAgent: model.value.paymentAgent ? 1 : 0
     }
 
-    const { error } = await request(() => createUser(payload))
-    if (error) return
+    if (model.value.password) {
+        payload.password = model.value.password;
+    }
+    
+    if (isCreate.value !== 1 && !editingUserId.value) {
+        return; 
+    }
+
+
+    let response;
+    if (isCreate.value === 1) {
+        response = await request(() => createUser(payload));
+    } else {
+        response = await request(() => updateUser(editingUserId.value, payload));
+    }
+
+    if (response.error) return
 
     close()
     emit('success')
 }
 
-async function open(type = 1) {
+////
+async function open(type = 1, userData = null) {
     isCreate.value = type
     isLoaded.value = false
     refFormManage.value?.resetForm()
     resetFormData()
     await loadHeadquarters()
+
+
+    if (type === 2 && userData) {
+        editingUserId.value = userData.id; 
+        
+        model.value.name = userData.name;
+        model.value.email = userData.email;
+        model.value.password = null; 
+        model.value.specialAgent = userData.specialAgent;
+        model.value.paymentAgent = userData.paymentAgent;
+        model.value.idRol = userData.type; 
+        
+        const sedeEncontrada = optionsSede.value.find(s => s.name === userData.headquarter);
+        if (sedeEncontrada) {
+            model.value.idSede = sedeEncontrada.idHeadquarter;
+        }
+    }
+
     isLoaded.value = true
     refModalManageUser.value.open()
 }
