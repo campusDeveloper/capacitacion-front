@@ -9,14 +9,26 @@
 				</div>
 				<div class="w-[241px]">
 					<p class="pb-1">Desde-hasta</p>
-					<el-date-picker v-model="filters.startEnd" type="daterange" start-placeholder="Desde"
+					<el-date-picker v-model="filters.date" type="daterange" start-placeholder="Desde"
 						end-placeholder="Hasta" class="!w-full" />
 				</div>
 				<div class="w-[210px]">
 					<p class="pb-1">Sedes</p>
-					<el-select clearable v-model="filters.idHeadquarter" placeholder="Seleccionar">
+					<el-select clearable v-model="filters.headquarter" placeholder="Seleccionar">
 						<el-option v-for="item in optionsHQSelect" :key="item.idHeadquarter" :label="item.name"
 							:value="item.idHeadquarter">
+						</el-option>
+					</el-select>
+				</div>
+				<div class="w-[210px]">
+					<p class="pb-1">Tipo de cliente</p>
+					<el-select clearable v-model="filters.idCustomerType" placeholder="Seleccionar">
+						<el-option v-for="item in optionsTypesSelect" :key="item.idType" :label="item.name"
+							:value="item.idType">
+							<div style="display: flex; align-items: center;">
+								<span :style="{ backgroundColor: item.color, width: '10px', height: '10px', borderRadius: '50%', marginRight: '10px' }"></span>
+								{{ item.name }}
+							</div>
 						</el-option>
 					</el-select>
 				</div>
@@ -28,7 +40,7 @@
 					</Button>
 				</el-tooltip>
 			</div>
-			<el-table :data="customers">
+			<el-table :data="customers" :key="customers.length" v-loading="loading">
 				<el-table-column label="Tipo de cliente" prop="idCustomerType" width="185" fixed>
 					<template #default="scope">
 						<SelectDropdown :disabled="loading" v-model="scope.row.idCustomerType"
@@ -69,8 +81,8 @@
 				<el-table-column label="Fecha reserva" width="210">
 					<template #default="scope">
 						<div class="d-middle-bt">
-							<p>{{ DateFormat(scope.row.reservation?.checkInDate, 'DD MMM YYYY') }} -
-								{{ DateFormat(scope.row.reservation?.checkOutDate, 'DD MMM YYYY') }}</p>
+							<p>{{ scope.row.reservation?.checkInDate ? DateFormat(scope.row.reservation.checkInDate, 'DD MMM YYYY') : '-' }} -
+								{{ scope.row.reservation?.checkOutDate ? DateFormat(scope.row.reservation.checkOutDate, 'DD MMM YYYY') : '-' }}</p>
 						</div>
 					</template>
 				</el-table-column>
@@ -97,12 +109,12 @@
 				</el-table-column>
 				<el-table-column label="Valor Pagado" prop="value" width="95" align="right">
 					<template #default="scope">
-						<p>{{ currencyFormat(scope.row.reservation?.valuePaid) ?? "-" }}</p>
+						<p>{{ scope.row.reservation?.valuePaid ? currencyFormat(scope.row.reservation.valuePaid) : "-" }}</p>
 					</template>
 				</el-table-column>
 				<el-table-column label="Valor Total" prop="value" width="95" align="right">
 					<template #default="scope">
-						<p>{{ currencyFormat(scope.row.reservation?.valueTotal) ?? "-" }}</p>
+						<p>{{ scope.row.reservation?.valueTotal ? currencyFormat(scope.row.reservation.valueTotal) : "-" }}</p>
 					</template>
 				</el-table-column>
 				<el-table-column label="Historial Chat" width="95" align="center">
@@ -122,6 +134,7 @@
 					</template>
 				</el-table-column>
 			</el-table>
+		
 		</div>
 		<Modal ref="refModalInactiveClient" action="Activar" cancel="Cancelar" title="Activar cliente" width="360"
 			:onAction="handleInactiveClient">
@@ -138,7 +151,7 @@
 </template>
 
 <script setup>
-import { onBeforeMount, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { DateFormat } from '@/util/dateFormat.js'
 import { currencyFormat } from '@/util/currencyFormat.js'
 import { request } from "@request";
@@ -148,6 +161,7 @@ import SelectDropdown from '@comp/SelectDropdown.vue'
 import modalHistory from '../partials/modalHistory.vue'
 import modalReservationHistory from '../partials/modalReservationHistory.vue'
 import modalComments from '../partials/modalComments.vue'
+import { getClients, getHeadquarters, getCustomerTypes } from '../services/clientService'
 
 const refModalInactiveClient = ref()
 const refModalActiveClient = ref()
@@ -165,9 +179,10 @@ const checkInState = [
 ]
 
 const filters = ref({
-	startEnd: null,
-	idHeadquarter: null,
-	name: null
+	date: '',
+	headquarter: null,
+	name: '',
+	idCustomerType: null
 })
 
 const customers = ref([])
@@ -176,24 +191,81 @@ const optionsHQSelect = ref([])
 
 const optionsTypesSelect = ref([])
 
+const fetchClients = async () => {
+  loading.value = true;
+
+  try {
+    const params = { ...filters.value };
+
+    if (params.date && Array.isArray(params.date)) {
+      params.dateFrom = params.date[0];
+      params.dateTo = params.date[1];
+      delete params.date;
+    }
+
+    if (params.idCustomerType) {
+      params.customerType = params.idCustomerType;
+      delete params.idCustomerType;
+    }
+
+    const { data, error } = await request(() => getClients(params), false);
+
+    if (error) {
+      customers.value = [];
+      return;
+    }
+
+    const array = Array.isArray(data) ? data : (data?.data || []);
+    customers.value = array;
+
+    // Add options for unknown customer types
+    const existingIds = new Set(optionsTypesSelect.value.map(o => o.id));
+    customers.value.forEach(customer => {
+      if (customer.idCustomerType != null && !existingIds.has(customer.idCustomerType)) {
+        optionsTypesSelect.value.push({ id: customer.idCustomerType, name: 'Sin etiqueta', color: '#ccc' });
+        existingIds.add(customer.idCustomerType);
+      }
+    });
+
+    console.log('CLIENTS 👉', array);
+    console.log('IS ARRAY:', Array.isArray(array));
+  } finally {
+    loading.value = false;
+  }
+};
+
+const fetchHeadquarters = async () => {
+  const { data, error } = await request(() => getHeadquarters(), false);
+
+  if (error) {
+    console.error('Error sedes:', error);
+    optionsHQSelect.value = [];
+    return;
+  }
+
+  const array = Array.isArray(data) ? data : (data?.data || []);
+  optionsHQSelect.value = array;
+};
+
+const fetchCustomerTypes = async () => {
+  const { data, error } = await request(() => getCustomerTypes(), false);
+
+  if (error) {
+    console.error('Error tipos:', error);
+    optionsTypesSelect.value = [];
+    return;
+  }
+
+  const array = Array.isArray(data) ? data : (data?.data || []);
+  optionsTypesSelect.value = array.map(item => ({ ...item, id: item.idType }));
+};
+
 /* Functions */
 
-async function handleFilter() {
-	if (loading.value) return
 
-	const { value: filtros } = filters
-
-	const getFilters = {
-		name: filtros.name,
-		idHeadquarter: filtros.idHeadquarter
-	}
-
-	if (filtros.startEnd) {
-		getFilters.reservationDateStart = filtros.startEnd[0];
-		getFilters.reservationDateEnd = filtros.startEnd[1];
-	}
-
-}
+const handleFilter = () => {
+  fetchClients();
+};
 
 function handleExportFile() {
 	if (!customers.value || loading.value) return
@@ -204,29 +276,30 @@ async function onChangePriority(value, row) {
 
 }
 
-function formatAffiliateCategory() {
-	switch (1) {
-		case 1:
-			return "A";
-		case 2:
-			return "B";
-		case 3:
-			return "C";
-		case 4:
-			return "Particular";
-		default:
-			return "-";
-	}
+function formatAffiliateCategory(category) {
+ 	switch (category) {
+ 		case 1:
+ 			return "A";
+ 		case 2:
+ 			return "B";
+ 		case 3:
+ 			return "C";
+ 		case 4:
+ 			return "Particular";
+ 		default:
+ 			return "-";
+ 	}
 }
 
-function checkInHourDiff() {
-	
+function checkInHourDiff(reservation) {
+  if (!reservation || !reservation.checkInDate) return '';
+  return dateDifferenceInHours(new Date(), reservation.checkInDate + " 15:00");
 }
 
 function checkInStyles(reservation) {
 	let state = 0
 
-	if (!reservation.id) return {
+	if (!reservation) return {
 		tooltip: `Pre-checkin ${ checkInState[state].tooltip }`,
 		color: checkInState[state].color
 	}
@@ -271,5 +344,9 @@ function handleInactiveClient() {
 
 function handleActiveClient() {
 }
+
+onMounted(async () => {
+  await Promise.all([fetchHeadquarters(), fetchCustomerTypes(), fetchClients()]);
+});
 
 </script>
