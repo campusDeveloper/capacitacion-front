@@ -43,8 +43,27 @@
 			<el-table :data="customers" :key="customers.length" v-loading="loading">
 				<el-table-column label="Tipo de cliente" prop="idCustomerType" width="185" fixed>
 					<template #default="scope">
-						<SelectDropdown :disabled="loading" v-model="scope.row.idCustomerType"
-							:options="optionsTypesSelect"  />
+						<el-select
+							:disabled="loading"
+							:model-value="customerTypeSelectValue(scope.row)"
+							class="custom-select"
+							size="small"
+							placement="right"
+							popper-class="!max-w-[148px]"
+							:style="customerTypeSelectStyle(scope.row)"
+							@update:model-value="updateCustomerType(scope.row, $event)"
+						>
+							<el-option
+								v-for="item in optionsTypesSelect"
+								:key="item.id"
+								:label="item.name"
+								:value="item.id"
+								class="d-middle !mb-1 !h-[26px]"
+								:style="`background-color:${item.color} !important; color: rgb(var(--xx-color-white-100))`"
+							>
+								<p class="line-clamp-1">{{ item.name }}</p>
+							</el-option>
+						</el-select>
 					</template>
 				</el-table-column>
 				<el-table-column label="Nombre" prop="name" width="180" sortable fixed />
@@ -157,7 +176,6 @@ import { currencyFormat } from '@/util/currencyFormat.js'
 import { request } from "@request";
 import { dateDifferenceInHours } from '../../../util/hourDifference';
 import * as XLSX from 'xlsx';
-import SelectDropdown from '@comp/SelectDropdown.vue'
 import modalHistory from '../partials/modalHistory.vue'
 import modalReservationHistory from '../partials/modalReservationHistory.vue'
 import modalComments from '../partials/modalComments.vue'
@@ -191,6 +209,8 @@ const optionsHQSelect = ref([])
 
 const optionsTypesSelect = ref([])
 
+const CUSTOMER_TYPE_EMPTY_VALUE = 'Sin etiqueta'
+
 const fetchClients = async () => {
   loading.value = true;
 
@@ -217,15 +237,6 @@ const fetchClients = async () => {
 
     const array = Array.isArray(data) ? data : (data?.data || []);
     customers.value = array;
-
-    // Add options for unknown customer types
-    const existingIds = new Set(optionsTypesSelect.value.map(o => o.id));
-    customers.value.forEach(customer => {
-      if (customer.idCustomerType != null && !existingIds.has(customer.idCustomerType)) {
-        optionsTypesSelect.value.push({ id: customer.idCustomerType, name: 'Sin etiqueta', color: '#ccc' });
-        existingIds.add(customer.idCustomerType);
-      }
-    });
 
     console.log('CLIENTS 👉', array);
     console.log('IS ARRAY:', Array.isArray(array));
@@ -262,6 +273,33 @@ const fetchCustomerTypes = async () => {
 
 /* Functions */
 
+function customerTypeSelectValue(row) {
+	if (row?.idCustomerType == null) return CUSTOMER_TYPE_EMPTY_VALUE
+
+	return hasActiveCustomerType(row) ? row.idCustomerType : CUSTOMER_TYPE_EMPTY_VALUE
+}
+
+function customerTypeSelectStyle(row) {
+	const selectedOption = getActiveCustomerType(row)
+	const colorBg = selectedOption?.color ?? 'rgb(var(--xx-color-gray-300))'
+	const colorContentLight = 'rgb(var(--xx-color-white-400))'
+
+	return `--color-bg: ${colorBg}; --color-content-light: ${colorContentLight};`
+}
+
+function getActiveCustomerType(row) {
+	return optionsTypesSelect.value.find(type => type.id == row?.idCustomerType)
+}
+
+function hasActiveCustomerType(row) {
+	return !!getActiveCustomerType(row)
+}
+
+function updateCustomerType(row, value) {
+	if (!row || value === CUSTOMER_TYPE_EMPTY_VALUE) return
+
+	row.idCustomerType = value
+}
 
 const handleFilter = () => {
   fetchClients();
