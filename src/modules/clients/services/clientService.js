@@ -21,3 +21,7 @@ export const changeCustomerType = (idCustomer, idType) => {
 export const getCustomerReservations = (idCustomer) => {
   return axios.get(`/api/customer/${idCustomer}/reservations`);
 };
+
+export const getCustomerMessagesHistory = (idCustomer) => {
+  return axios.get(`/api/customer/${idCustomer}/messages-history`);
+};

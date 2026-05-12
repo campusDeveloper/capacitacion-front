@@ -372,8 +372,13 @@ function openReservationHistory(row) {
 	refModalReservationHistory.value.open(idCustomer)
 }
 
-function openHistory() {
-	refModalHistory.value.open()
+function openHistory(row) {
+	if (!row || loading.value) return
+
+	const idCustomer = getCustomerId(row)
+	if (!idCustomer) return
+
+	refModalHistory.value.open(idCustomer, row.lastConnection)
 }
 
 function openModalComments() {
