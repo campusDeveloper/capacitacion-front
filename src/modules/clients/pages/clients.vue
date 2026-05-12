@@ -10,25 +10,13 @@
 				<div class="w-[241px]">
 					<p class="pb-1">Desde-hasta</p>
 					<el-date-picker v-model="filters.date" type="daterange" start-placeholder="Desde"
-						end-placeholder="Hasta" class="!w-full" />
+						end-placeholder="Hasta" value-format="YYYY-MM-DD" class="!w-full" />
 				</div>
 				<div class="w-[210px]">
 					<p class="pb-1">Sedes</p>
-					<el-select clearable v-model="filters.headquarter" placeholder="Seleccionar">
+					<el-select clearable v-model="filters.idHeadquarter" placeholder="Seleccionar">
 						<el-option v-for="item in optionsHQSelect" :key="item.idHeadquarter" :label="item.name"
 							:value="item.idHeadquarter">
-						</el-option>
-					</el-select>
-				</div>
-				<div class="w-[210px]">
-					<p class="pb-1">Tipo de cliente</p>
-					<el-select clearable v-model="filters.idCustomerType" placeholder="Seleccionar">
-						<el-option v-for="item in optionsTypesSelect" :key="item.idType" :label="item.name"
-							:value="item.idType">
-							<div style="display: flex; align-items: center;">
-								<span :style="{ backgroundColor: item.color, width: '10px', height: '10px', borderRadius: '50%', marginRight: '10px' }"></span>
-								{{ item.name }}
-							</div>
 						</el-option>
 					</el-select>
 				</div>
@@ -179,7 +167,7 @@ import * as XLSX from 'xlsx';
 import modalHistory from '../partials/modalHistory.vue'
 import modalReservationHistory from '../partials/modalReservationHistory.vue'
 import modalComments from '../partials/modalComments.vue'
-import { getClients, getHeadquarters, getCustomerTypes } from '../services/clientService'
+import { getClients, getHeadquarters, getCustomerTypes, changeCustomerType } from '../services/clientService'
 
 const refModalInactiveClient = ref()
 const refModalActiveClient = ref()
@@ -198,9 +186,8 @@ const checkInState = [
 
 const filters = ref({
 	date: '',
-	headquarter: null,
-	name: '',
-	idCustomerType: null
+	idHeadquarter: null,
+	name: ''
 })
 
 const customers = ref([])
@@ -223,9 +210,9 @@ const fetchClients = async () => {
       delete params.date;
     }
 
-    if (params.idCustomerType) {
-      params.customerType = params.idCustomerType;
-      delete params.idCustomerType;
+    if (params.idHeadquarter) {
+      params.headquarter = params.idHeadquarter;
+      delete params.idHeadquarter;
     }
 
     const { data, error } = await request(() => getClients(params), false);
@@ -295,10 +282,26 @@ function hasActiveCustomerType(row) {
 	return !!getActiveCustomerType(row)
 }
 
-function updateCustomerType(row, value) {
-	if (!row || value === CUSTOMER_TYPE_EMPTY_VALUE) return
+function getCustomerId(row) {
+	return row?.idCustomer ?? row?.id
+}
 
-	row.idCustomerType = value
+async function updateCustomerType(row, value) {
+	if (!row || loading.value || value === CUSTOMER_TYPE_EMPTY_VALUE || value == null) return
+
+	const idCustomer = getCustomerId(row)
+	if (!idCustomer || row.idCustomerType === value) return
+
+	loading.value = true
+
+	try {
+		const { error } = await request(() => changeCustomerType(idCustomer, value), false)
+		if (error) return
+
+		row.idCustomerType = value
+	} finally {
+		loading.value = false
+	}
 }
 
 const handleFilter = () => {
@@ -360,8 +363,13 @@ function handleIncreaseComment() {
 	
 }
 
-function openReservationHistory() {
-	refModalReservationHistory.value.open()
+function openReservationHistory(row) {
+	if (!row || loading.value) return
+
+	const idCustomer = getCustomerId(row)
+	if (!idCustomer) return
+
+	refModalReservationHistory.value.open(idCustomer)
 }
 
 function openHistory() {
