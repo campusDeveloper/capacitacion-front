@@ -60,7 +60,7 @@ import modalEditSedes from '../partials/modalEditSedes.vue';
 import modalPermissionSettings from '../partials/modalPermissionSettings.vue';
 import userCard from '../components/userCard.vue';
 import { request } from '@request'
-import { getUsers, deleteUser} from '../services/userService';
+import { getUsers, deleteUser, changeUserState } from '../services/userService';
 
 const refModalActiveUser = ref()
 const refModalInactiveUser = ref()
@@ -74,8 +74,8 @@ const search = ref(null)
 const usersData = ref([])
 const userToDeleteId = ref(null)
 
-const currentToggleId = ref(null)
-const currentDeleteId = ref(null)
+const userToChangeStateId = ref(null)
+const userToChangeStateValue = ref(null)
 
 const userTypeOptions = ref([
 	{
@@ -135,7 +135,10 @@ function openEditSedes() {
 }
 
 function handleChangeState(data) {
-	if (true) {
+	userToChangeStateId.value = data.id
+	userToChangeStateValue.value = data.state ? 0 : 1
+
+	if (userToChangeStateValue.value === 1) {
 		refModalActiveUser.value.open()
 	} else {
 		refModalInactiveUser.value.open()
@@ -143,11 +146,29 @@ function handleChangeState(data) {
 }
 
 async function handleInactiveUser() {
-	
+	await updateUserState()
 }
 
 async function handleActiveUser() {
-	
+	await updateUserState()
+}
+
+async function updateUserState() {
+	if (!userToChangeStateId.value && userToChangeStateId.value !== 0) return
+
+	const payload = {
+		state: userToChangeStateValue.value
+	}
+
+	const { error } = await request(() => changeUserState(userToChangeStateId.value, payload));
+
+	if (error) return;
+
+	refModalActiveUser.value.close()
+	refModalInactiveUser.value.close()
+	userToChangeStateId.value = null
+	userToChangeStateValue.value = null
+	getLoadUsers()
 }
 
 function openLinkForza() {
