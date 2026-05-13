@@ -89,9 +89,9 @@
 import { ref } from 'vue';
 import { Form, Field } from 'vee-validate'
 import { request } from '@request'
-import { getHeadquarters } from '../../configuration/services/knowledgeService';
 import { createUser } from '../services/userService';
 import { updateUser } from '../services/userService';
+import { getHeadquarters } from '../services/userService';
 
 const refModalManageUser = ref()
 const refFormManage = ref()
@@ -138,7 +138,7 @@ async function loadHeadquarters() {
     if (error) return
 
     const rows = Array.isArray(data?.data) ? data.data : []
-    optionsSede.value = rows.filter((item) => item.idHeadquarter !== null)
+    optionsSede.value = rows.filter((item) => item.idHeadquarter !== null && item.state !== 0)
     secondarySede.value = optionsSede.value.map((item) => ({
         ...item,
         value: 0

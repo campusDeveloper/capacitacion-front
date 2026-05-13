@@ -130,8 +130,8 @@ async function handleDeleteUser() {
 	getLoadUsers();
 }
 
-function openEditSedes() {
-	refModalEditSedes.value.open()
+function openEditSedes(user) {
+	refModalEditSedes.value.open(user)
 }
 
 function handleChangeState(data) {
