@@ -10,3 +10,15 @@ export const getActivePreReservations = async () => {
     
     return response; 
 }
+
+/**
+ * Obtiene la lista de pre-reservas vencidas (Paginadas)
+ * @param {number} page
+ * @param {number} limit
+ * @returns {Promise<Object>} 
+ */
+export const getExpiredPreReservations = async (page = 1, limit = 10) => {
+    const response = await request(() => axios.get(`/api/pre-reservations/expired?page=${page}&limit=${limit}`));
+    
+    return response; 
+}
