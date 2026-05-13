@@ -20,8 +20,10 @@
 					</template>
 				</el-input>
 			</div>
-			<viewTableActive v-if="view == 1" :data="preservationActive" @openHistory="openHistory" />
+            
+			<viewTableActive v-if="view == 1" :data="filteredPreservationActive" @openHistory="openHistory" />
 			<viewTableExpired v-else :data="preservationExpired" @openHistory="openHistory" />
+            
 			<el-pagination v-if="view == 2 && pEPagination" class="!w-fit" :disabled="loading"
 				:total="pEPagination.total" :page-count="pEPagination.totalPages"
 				:hide-on-single-page="pEPagination.totalPages === 1"
@@ -34,31 +36,57 @@
 </template>
 
 <script setup>
-import { onBeforeMount, ref, watch } from 'vue';
-import { request } from "@request";
-import viewTableActive from '../partials/viewTableActive.vue'
-import viewTableExpired from '../partials/viewTableExpired.vue'
-import modalHistory from '../partials/modalHistory.vue'
+import { onMounted, ref, computed } from 'vue';
+import { getActivePreReservations } from '../services/preReservationService.js';
+import viewTableActive from '../partials/viewTableActive.vue';
+import viewTableExpired from '../partials/viewTableExpired.vue';
+import modalHistory from '../partials/modalHistory.vue';
 
-const refModalHistory = ref()
-
+const refModalHistory = ref();
 const view = ref(1);
-const search = ref('')
+const search = ref('');
+const loading = ref(false);
 
-const loading = ref(false)
-const preservationActive = ref([
+const rawPreservationActive = ref([]);
 
-])
+const filteredPreservationActive = computed(() => {
+	if (!search.value) return rawPreservationActive.value;
+	
+	const searchTerm = search.value.toLowerCase();
+	return rawPreservationActive.value.filter(item => 
+		item.customer && item.customer.toLowerCase().includes(searchTerm)
+	);
+});
 
-const preservationExpired = ref([])
-const pEPagination = ref(null)
-const pECurrent = ref(1)
+const preservationExpired = ref([]);
+const pEPagination = ref(null);
+const pECurrent = ref(1);
 
+/* Funciones */
+const fetchActiveData = async () => {
+	loading.value = true;
+	try {
+		const response = await getActivePreReservations();
+		if (response?.data?.data) {
+			rawPreservationActive.value = response.data.data;
+		}
+	} catch (error) {
+		console.error("Error al obtener datos:", error);
+	} finally {
+		loading.value = false;
+	}
+};
 
-/* Functions */
 function openHistory(row) {
-	if (!row) return
-	refModalHistory.value.open()
+	if (!row) return;
+	refModalHistory.value.open();
 }
 
+function hadlePagination(page) {
+	pECurrent.value = page;
+}
+
+onMounted(() => {
+	fetchActiveData();
+});
 </script>
