@@ -46,16 +46,22 @@ async function open(idCustomer, lastConnection = null) {
 
 	loading.value = true
 
-	try {
-		const { data, error } = await request(() => getCustomerMessagesHistory(idCustomer), false)
+		try {
+			const { data, error } = await request(() => getCustomerMessagesHistory(idCustomer), false)
 
-		if (error) {
-			listChat.value = []
-			return
-		}
+			if (error) {
+				listChat.value = []
+				return
+			}
 
-		listChat.value = Array.isArray(data) ? data : (data?.data || [])
-	} finally {
+			if (Array.isArray(data)) {
+				listChat.value = data
+			} else {
+				const payload = data?.data || data || {}
+				listChat.value = payload.messages || []
+				info.value.lastConnection = payload.lastConnection || info.value.lastConnection
+			}
+		} finally {
 		loading.value = false
 	}
 }
