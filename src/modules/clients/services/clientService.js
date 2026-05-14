@@ -25,3 +25,11 @@ export const getCustomerReservations = (idCustomer) => {
 export const getCustomerMessagesHistory = (idCustomer) => {
   return axios.get(`/api/customer/${idCustomer}/messages-history`);
 };
+
+export const getCustomerComments = (idCustomer) => {
+  return axios.get(`/api/customer/${idCustomer}/comments`);
+};
+
+export const createCustomerComment = (idCustomer, payload) => {
+  return axios.post(`/api/customer/${idCustomer}/comment`, payload);
+};

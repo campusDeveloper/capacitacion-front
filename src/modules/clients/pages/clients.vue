@@ -153,7 +153,7 @@
 		</Modal>
 		<modalHistory ref="refModalHistory" />
 		<modalReservationHistory ref="refModalReservationHistory" />
-		<modalComments ref="refModalComments" @increase-comment="handleIncreaseComment" />
+		<modalComments ref="refModalComments" @update-comment-count="handleUpdateCommentCount" />
 	</section>
 </template>
 
@@ -167,7 +167,7 @@ import * as XLSX from 'xlsx';
 import modalHistory from '../partials/modalHistory.vue'
 import modalReservationHistory from '../partials/modalReservationHistory.vue'
 import modalComments from '../partials/modalComments.vue'
-import { getClients, getHeadquarters, getCustomerTypes, changeCustomerType } from '../services/clientService'
+import { getClients, getHeadquarters, getCustomerTypes, changeCustomerType, getCustomerComments } from '../services/clientService'
 
 const refModalInactiveClient = ref()
 const refModalActiveClient = ref()
@@ -176,6 +176,7 @@ const refModalReservationHistory = ref()
 const refModalComments = ref()
 
 const loading = ref(false)
+const loadingCommentCounts = ref(false)
 
 const checkInState = [
 	{ tooltip: 'no disponible', color: 'text-mid-gray-300' },
@@ -224,6 +225,7 @@ const fetchClients = async () => {
 
     const array = Array.isArray(data) ? data : (data?.data || []);
     customers.value = array;
+    await syncCommentCounts();
 
     console.log('CLIENTS 👉', array);
     console.log('IS ARRAY:', Array.isArray(array));
@@ -231,6 +233,27 @@ const fetchClients = async () => {
     loading.value = false;
   }
 };
+
+async function syncCommentCounts() {
+	if (loadingCommentCounts.value || customers.value.length === 0) return
+
+	loadingCommentCounts.value = true
+
+	try {
+		await Promise.all(customers.value.map(async (customer) => {
+			const idCustomer = getCustomerId(customer)
+			if (!idCustomer) return
+
+			const { data, error } = await request(() => getCustomerComments(idCustomer), false)
+			if (error) return
+
+			const comments = Array.isArray(data) ? data : (data?.data || [])
+			customer.countComments = comments.length
+		}))
+	} finally {
+		loadingCommentCounts.value = false
+	}
+}
 
 const fetchHeadquarters = async () => {
   const { data, error } = await request(() => getHeadquarters(), false);
@@ -359,8 +382,11 @@ function checkInStyles(reservation) {
 	}
 }
 
-function handleIncreaseComment() {
-	
+function handleUpdateCommentCount(idCustomer, countComments) {
+	const customer = customers.value.find(item => getCustomerId(item) == idCustomer)
+	if (!customer) return
+
+	customer.countComments = countComments
 }
 
 function openReservationHistory(row) {
@@ -381,8 +407,13 @@ function openHistory(row) {
 	refModalHistory.value.open(idCustomer, row.lastConnection)
 }
 
-function openModalComments() {
-	refModalComments.value.open()
+function openModalComments(row) {
+	if (!row || loading.value) return
+
+	const idCustomer = getCustomerId(row)
+	if (!idCustomer) return
+
+	refModalComments.value.open(idCustomer)
 }
 
 function toggleState(row) {  // ← SOLO 'row'
