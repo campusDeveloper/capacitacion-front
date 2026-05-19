@@ -3,13 +3,13 @@
 		:initialValues="{ idAgent }" destroyOnClose
 	>
 		<p class="f-t-14">Elige uno de los usuarios para asignarlo como comercial principal</p>
-		<Field v-slot="{ field, errorMessage }" name="idAgent" label="agente especializado" rules="required">
+		<Field v-slot="{ errorMessage }" name="idAgent" label="agente especializado">
 			<p class="f-tm-16 mt-3 pb-1">Agente especializado</p>
-			<el-select v-model="idAgent" placeholder="Seleccionar" popper-class="!w-[305px]" size="large" v-bind="field">
+			<el-select v-model="idAgent" placeholder="Seleccionar agente" popper-class="!w-[305px]" size="large" clearable>
 				<el-option v-for="item in optionsAgent"
-					:key="item.idUser"
-					:label="item.name"
-					:value="item.idUser">
+					:key="item.value"
+					:label="item.label"
+					:value="item.value">
 				</el-option>
 			</el-select>
 			<Error :server="errorMessage" :local="errorMessage" />
@@ -32,11 +32,41 @@ const optionsAgent = ref([])
 const emit = defineEmits(['submitForm'])
 
 /* Functions */
-async function handleActionCommercial() {
+function normalizeAgentOptions(options, currentIdAgent = null, currentAgentName = null) {
+	const normalizedOptions = options.map(item => ({
+		label: item.label ?? item.name ?? '',
+		value: Number(item.value ?? item.idUser),
+	}))
+	const selectedId = normalizeAgentId(currentIdAgent)
+	const hasCurrentOption = normalizedOptions.some(item => item.value === selectedId)
+
+	if (selectedId !== null && currentAgentName && !hasCurrentOption) {
+		normalizedOptions.unshift({
+			label: currentAgentName,
+			value: selectedId
+		})
+	}
+
+	return normalizedOptions
 }
 
-async function open( ) {
-   
+function normalizeAgentId(value) {
+	if (value === null || typeof value === 'undefined' || value === '') return null
+	return Number(value)
+}
+
+async function handleActionCommercial() {
+	emit('submitForm', {
+		idOpportunity: idOpportunityEdit.value,
+		idUser: normalizeAgentId(idAgent.value)
+	})
+}
+
+async function open(options = [], idOpportunity = null, currentIdAgent = null, assign = true, currentAgentName = null) {
+	optionsAgent.value = normalizeAgentOptions(options, currentIdAgent, currentAgentName)
+	idOpportunityEdit.value = idOpportunity
+	idAgent.value = normalizeAgentId(currentIdAgent)
+	isAssign.value = assign
 	refModalHandleAgent.value.open()
 }
 

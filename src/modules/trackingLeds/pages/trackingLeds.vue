@@ -84,7 +84,12 @@
 				</el-table-column>
 				<el-table-column label="Estado interés" prop="idOpportunityState" width="190" fixed>
 					<template #default="scope">
-						<SelectDropdown v-model="scope.row.idOpportunityState" :options="stateOptionsForTable" />
+						<SelectDropdown
+							v-model="scope.row.idOpportunityState"
+							:disabled="isUpdatingOpportunityState(scope.row.id)"
+							:options="stateOptionsForTable"
+							@change="onChangeOpportunityState(scope.row, $event)"
+						/>
 					</template>
 				</el-table-column>
 				<el-table-column label="Sede de interés" width="150" align="center">
@@ -157,7 +162,14 @@
 			</el-table>
 		</div>
 		<modalSpecializedAgent ref="refModalHandleAgent" @submitForm="handleActionAgent" />
-		<modalHistory ref="refModalHistory" />
+		<modalHistory
+			ref="refModalHistory"
+			:loading-messages-history="loadingMessagesHistory"
+			:messages-history="messagesHistory"
+			:messages-history-error="messagesHistoryError"
+			:last-connection="messagesHistoryLastConnection"
+			@close="resetMessagesHistory"
+		/>
 		<modalComments ref="refModalComments" @increase-comment="handleIncreaseComment"/>
 	</section>
 </template>
@@ -166,13 +178,14 @@
 import { ref, onMounted, watch, computed } from 'vue'
 import { DateFormat } from '@/util/dateFormat.js'
 import { request } from '@request'
+import { ElMessage } from 'element-plus'
 import * as XLSX from 'xlsx'
 import SelectStatusFollowUp from '@comp/SelectStatusFollowUp.vue'
 import SelectDropdown from '@comp/SelectDropdown.vue'
 import modalSpecializedAgent from '../partials/modalSpecializedAgent.vue'
 import modalHistory from '../partials/modalHistory.vue'
 import modalComments from '../partials/modalComments.vue'
-import { getTrackingLeads, getHeadquarters, getUsers, getOpportunityStates, getTrackingParents } from '../services/trackingLeadsService'
+import { getTrackingLeads, getHeadquarters, getUsers, getOpportunityStates, getTrackingParents, changeOpportunityState, changeAssignedUser, getCustomerMessagesHistory } from '../services/trackingLeadsService'
 import { getTrackingOpportunities } from '../../configuration/services/trackingService'
 
 const refModalHandleAgent = ref()
@@ -184,6 +197,14 @@ const search = ref('')
 const showFilter = ref(false)
 const hotFilterTimer = ref(null)
 const lastRequestId = ref(0)
+const updatingOpportunityStateIds = ref([])
+const updatingAssignedUserIds = ref([])
+const loadingMessagesHistory = ref(false)
+const messagesHistory = ref([])
+const messagesHistoryError = ref('')
+const messagesHistoryRequestId = ref(0)
+const messagesHistoryLastConnection = ref(null)
+const messagesHistoryCustomerId = ref(null)
 
 const filters = ref({
 	startEnd: null,
@@ -204,7 +225,8 @@ const trackingParents = ref([])
 const selectedTrackingParent = ref(null)
 const appliedAdvancedFilters = ref({
 	idHeadquarter: null,
-	startEnd: null,
+	idOpportunityState: null,
+	idOpportunityTracking: null,
 })
 const stateOptionsForTable = computed(() => {
 	const catalog = Array.isArray(optionsStateInterest.value) ? optionsStateInterest.value : []
@@ -224,7 +246,11 @@ const stateOptionsForTable = computed(() => {
 		color: '#909399'
 	}))
 
-	return [...catalog, ...fallbackOptions]
+	return [
+		{ id: null, name: 'Sin asignar', color: '#909399' },
+		...catalog,
+		...fallbackOptions
+	]
 })
 const filteredTrackingLeads = computed(() => {
 	let leads = [...trackingLeads.value]
@@ -242,10 +268,10 @@ const filteredTrackingLeads = computed(() => {
 		}
 	}
 
-	if (selectedTrackingParent.value) {
+	if (appliedAdvancedFilters.value.idOpportunityTracking) {
 		leads = leads.filter(item => {
 			const trackingValue = Number(item?.idOpportunityTracking)
-			const selectedValue = Number(selectedTrackingParent.value)
+			const selectedValue = Number(appliedAdvancedFilters.value.idOpportunityTracking)
 			if (trackingValue === selectedValue) return true
 
 			for (const parent of optionsTrackingStates.value) {
@@ -264,8 +290,22 @@ const filteredTrackingLeads = computed(() => {
 		leads = leads.filter(item => Number(item?.idUserAssigned) === Number(selectedUser.value))
 	}
 
-	if (selectedOpportunityState.value) {
-		leads = leads.filter(item => Number(item?.idOpportunityState) === Number(selectedOpportunityState.value))
+	if (appliedAdvancedFilters.value.idOpportunityState) {
+		leads = leads.filter(item => Number(item?.idOpportunityState) === Number(appliedAdvancedFilters.value.idOpportunityState))
+	}
+
+	if (filters.value.startEnd?.length === 2) {
+		const [start, end] = filters.value.startEnd
+		const startTime = normalizeDateForCompare(start, false)
+		const endTime = normalizeDateForCompare(end, true)
+
+		if (startTime && endTime) {
+			leads = leads.filter(item => {
+				const checkInTime = normalizeDateForCompare(item?.checkInDate, false)
+				if (!checkInTime) return false
+				return checkInTime >= startTime && checkInTime <= endTime
+			})
+		}
 	}
 
 	return leads
@@ -298,6 +338,7 @@ function mapTrackingLead(item) {
 
 	return {
 		id: item.Id ?? item.id,
+		idCustomer: item.idCustomer ?? item.IdCustomer ?? item.customerId ?? item.CustomerId ?? item.id_customer ?? item.customer?.id ?? item.customer?.Id ?? item.Customer?.id ?? item.Customer?.Id ?? null,
 		name: item.Name ?? item.name,
 		phone: item.Phone ?? item.phone,
 		affiliateCategory: mapAffiliateCategory(item.affiliateCategory),
@@ -352,6 +393,25 @@ function normalizeTrackingStates(payload) {
 	return []
 }
 
+function mapMessageHistory(item) {
+	const content = item.Content ?? item.content
+
+	return {
+		id: item.Id ?? item.id,
+		type: Number(item.Type ?? item.type ?? 1),
+		content: typeof content === 'string' && content.trim() ? content : 'Sin contenido',
+		lastConnection: item.lastConnection ?? item.LastConnection ?? null,
+	}
+}
+
+function normalizeDateForCompare(value, endOfDay = false) {
+	if (!value) return null
+	const date = value instanceof Date ? new Date(value) : new Date(value)
+	if (Number.isNaN(date.getTime())) return null
+	date.setHours(endOfDay ? 23 : 0, endOfDay ? 59 : 0, endOfDay ? 59 : 0, endOfDay ? 999 : 0)
+	return date.getTime()
+}
+
 async function loadTrackingLeads() {
 	const requestId = ++lastRequestId.value
 	loading.value = true
@@ -359,8 +419,12 @@ async function loadTrackingLeads() {
 		const params = {}
 		if (appliedAdvancedFilters.value.idHeadquarter) params.idHeadquarter = Number(appliedAdvancedFilters.value.idHeadquarter)
 		if (selectedUser.value) params.idUserAssigned = Number(selectedUser.value)
-		if (selectedOpportunityState.value) params.idOpportunityState = Number(selectedOpportunityState.value)
-		if (filters.value.idOpportunityTracking) params.idOpportunityTracking = Number(filters.value.idOpportunityTracking)
+		if (appliedAdvancedFilters.value.idOpportunityState) params.idOpportunityState = Number(appliedAdvancedFilters.value.idOpportunityState)
+		if (appliedAdvancedFilters.value.idOpportunityTracking) params.idOpportunityTracking = Number(appliedAdvancedFilters.value.idOpportunityTracking)
+		if (filters.value.startEnd?.length === 2) {
+			params.reservationDateStart = filters.value.startEnd[0]
+			params.reservationDateEnd = filters.value.startEnd[1]
+		}
 		const { data, error } = await request(() => getTrackingLeads(params), { success: false, error: true })
 		if (error) return
 		console.log('trackingLeads response:', data)
@@ -459,7 +523,9 @@ async function loadUsers() {
 		}))
 		optionsUsersAgent.value = list.map(item => ({
 			idUser: Number(item?.idUser),
-			name: (item?.name ?? '').trim()
+			name: (item?.name ?? '').trim(),
+			specialAgent: Number(item?.specialAgent) === 1,
+			paymentAgent: Number(item?.paymentAgent) === 1,
 		}))
 	} catch (e) {
 		users.value = []
@@ -469,7 +535,60 @@ async function loadUsers() {
 
 function openHistory(row) {
 	if (!row) return
-	refModalHistory.value.open(row.id)
+	console.log('selected lead', row)
+	const idCustomer = row.idCustomer
+	if (loadingMessagesHistory.value && messagesHistoryCustomerId.value === idCustomer) return
+	refModalHistory.value.open()
+	loadMessagesHistory(idCustomer, row.lastConnection)
+}
+
+function resetMessagesHistory() {
+	messagesHistoryRequestId.value++
+	loadingMessagesHistory.value = false
+	messagesHistory.value = []
+	messagesHistoryError.value = ''
+	messagesHistoryLastConnection.value = null
+	messagesHistoryCustomerId.value = null
+}
+
+async function loadMessagesHistory(idCustomer, fallbackLastConnection = null) {
+	const requestId = ++messagesHistoryRequestId.value
+	messagesHistoryCustomerId.value = idCustomer
+	messagesHistory.value = []
+	messagesHistoryError.value = ''
+	messagesHistoryLastConnection.value = fallbackLastConnection
+	loadingMessagesHistory.value = true
+	console.log('history endpoint', `/customer/${idCustomer}/messages-history`)
+
+	try {
+		if (idCustomer === null || typeof idCustomer === 'undefined' || idCustomer === '' || Number.isNaN(Number(idCustomer))) {
+			messagesHistoryError.value = 'Error cargando historial'
+			return
+		}
+
+		const { data, error } = await request(
+			() => getCustomerMessagesHistory(idCustomer),
+			{ success: false, error: true }
+		)
+		console.log('messagesHistory API response', data)
+
+		if (requestId !== messagesHistoryRequestId.value) return
+
+		if (error) {
+			messagesHistoryError.value = 'Error cargando historial'
+			return
+		}
+
+		const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : []
+		const normalizedMessages = list.map(mapMessageHistory)
+		console.log('messagesHistory mapped', normalizedMessages)
+		messagesHistory.value = [...normalizedMessages]
+		messagesHistoryLastConnection.value = messagesHistory.value.find(item => item.lastConnection)?.lastConnection ?? fallbackLastConnection
+	} catch (e) {
+		if (requestId === messagesHistoryRequestId.value) messagesHistoryError.value = 'Error cargando historial'
+	} finally {
+		if (requestId === messagesHistoryRequestId.value) loadingMessagesHistory.value = false
+	}
 }
 
 function handleIncreaseComment(value) {
@@ -487,13 +606,15 @@ function openModalComments(row) {
 }
 
 function openAssignSpecializedAgent(row) {
-	if (!row || loading.value) return
-	refModalHandleAgent.value.open(optionsUsersAgent.value, row.id, row.idUserAssigned)
+	if (!row || loading.value || isUpdatingAssignedUser(row.id)) return
+	const currentAgentName = row.nameResponsible ?? row.userAssigned?.name ?? null
+	refModalHandleAgent.value.open(optionsUsersAgent.value, row.id, row.idUserAssigned, true, currentAgentName)
 }
 
 function openEditSpecializedAgent(row) {
-	if (!row || loading.value) return
-	refModalHandleAgent.value.open(optionsUsersAgent.value, row.id, row.idUserAssigned, false)
+	if (!row || loading.value || isUpdatingAssignedUser(row.id)) return
+	const currentAgentName = row.nameResponsible ?? row.userAssigned?.name ?? null
+	refModalHandleAgent.value.open(optionsUsersAgent.value, row.id, row.idUserAssigned, false, currentAgentName)
 }
 
 function handleExportFile() {
@@ -504,19 +625,212 @@ function handleExportFile() {
 	XLSX.writeFile(workbook, 'tracking-leads.xlsx')
 }
 
+function isUpdatingOpportunityState(idOpportunity) {
+	return updatingOpportunityStateIds.value.includes(idOpportunity)
+}
+
+function setOpportunityStateUpdating(idOpportunity, value) {
+	if (value) {
+		if (!isUpdatingOpportunityState(idOpportunity)) {
+			updatingOpportunityStateIds.value = [...updatingOpportunityStateIds.value, idOpportunity]
+		}
+		return
+	}
+
+	updatingOpportunityStateIds.value = updatingOpportunityStateIds.value.filter(id => id !== idOpportunity)
+}
+
+function normalizeStateValue(value) {
+	if (value === null || typeof value === 'undefined' || value === '') return null
+	return Number(value)
+}
+
+function updateOpportunityStateLocally(idOpportunity, idState) {
+	const lead = trackingLeads.value.find(item => item.id === idOpportunity)
+	if (lead) lead.idOpportunityState = idState
+}
+
+async function onChangeOpportunityState(row, value) {
+	if (!row?.id || isUpdatingOpportunityState(row.id)) return
+
+	const previousState = normalizeStateValue(row.idOpportunityState)
+	const nextState = normalizeStateValue(value)
+	if (previousState === nextState) return
+
+	setOpportunityStateUpdating(row.id, true)
+
+	try {
+		const payload = { idState: nextState }
+		const { data, error } = await request(
+			() => changeOpportunityState(row.id, payload),
+			{ success: true, error: true }
+		)
+
+		const isUpdated = data?.data === true || data === true
+		if (error || !isUpdated) {
+			updateOpportunityStateLocally(row.id, previousState)
+			if (!error) ElMessage.error(data?.message ?? 'No se pudo actualizar el estado de interés.')
+			return
+		}
+
+		updateOpportunityStateLocally(row.id, nextState)
+	} catch (e) {
+		updateOpportunityStateLocally(row.id, previousState)
+		ElMessage.error('No se pudo actualizar el estado de interés.')
+	} finally {
+		setOpportunityStateUpdating(row.id, false)
+	}
+}
+
+function isUpdatingAssignedUser(idOpportunity) {
+	return updatingAssignedUserIds.value.includes(idOpportunity)
+}
+
+function setAssignedUserUpdating(idOpportunity, value) {
+	if (value) {
+		if (!isUpdatingAssignedUser(idOpportunity)) {
+			updatingAssignedUserIds.value = [...updatingAssignedUserIds.value, idOpportunity]
+		}
+		return
+	}
+
+	updatingAssignedUserIds.value = updatingAssignedUserIds.value.filter(id => id !== idOpportunity)
+}
+
+function normalizeUserValue(value) {
+	if (value === null || typeof value === 'undefined' || value === '') return null
+	return Number(value)
+}
+
+function mapAssignedUserFromResponse(payload, idUser) {
+	const userAssignedRaw = payload?.UserAssigned ?? payload?.userAssigned ?? null
+	const nameResponsible = payload?.NameResponsible ?? payload?.nameResponsible ?? userAssignedRaw?.name ?? userAssignedRaw?.Name ?? null
+
+	if (userAssignedRaw || nameResponsible) {
+		return {
+			idUserAssigned: payload?.idUserAssigned ?? idUser,
+			nameResponsible,
+			userAssigned: userAssignedRaw
+				? {
+					name: userAssignedRaw.Name ?? userAssignedRaw.name ?? nameResponsible,
+					specialAgent: Number(userAssignedRaw.specialAgent) === 1,
+					paymentAgent: Number(userAssignedRaw.paymentAgent) === 1,
+				}
+				: nameResponsible
+					? {
+						name: nameResponsible,
+						specialAgent: Number(payload?.specialAgent) === 1,
+						paymentAgent: Number(payload?.paymentAgent) === 1,
+					}
+					: null,
+			specialAgent: Number(payload?.specialAgent ?? userAssignedRaw?.specialAgent) === 1,
+			paymentAgent: Number(payload?.paymentAgent ?? userAssignedRaw?.paymentAgent) === 1,
+		}
+	}
+
+	if (!idUser) {
+		return {
+			idUserAssigned: null,
+			nameResponsible: null,
+			userAssigned: null,
+			specialAgent: false,
+			paymentAgent: false,
+		}
+	}
+
+	const selectedUserInfo = optionsUsersAgent.value.find(item => Number(item.idUser) === Number(idUser))
+
+	return {
+		idUserAssigned: idUser,
+		nameResponsible: selectedUserInfo?.name ?? null,
+		userAssigned: selectedUserInfo
+			? {
+				name: selectedUserInfo.name,
+				specialAgent: Number(selectedUserInfo.specialAgent) === 1,
+				paymentAgent: Number(selectedUserInfo.paymentAgent) === 1,
+			}
+			: null,
+		specialAgent: Number(selectedUserInfo?.specialAgent) === 1,
+		paymentAgent: Number(selectedUserInfo?.paymentAgent) === 1,
+	}
+}
+
+function applyAssignedUserToRow(row, assignedUser) {
+	row.idUserAssigned = assignedUser.idUserAssigned
+	row.nameResponsible = assignedUser.nameResponsible
+	row.userAssigned = assignedUser.userAssigned
+	row.specialAgent = assignedUser.specialAgent
+	row.paymentAgent = assignedUser.paymentAgent
+}
+
+async function handleActionAgent({ idOpportunity, idUser }) {
+	if (!idOpportunity || isUpdatingAssignedUser(idOpportunity)) return
+
+	const row = trackingLeads.value.find(item => item.id === idOpportunity)
+	if (!row) return
+
+	const previousAssignedUser = {
+		idUserAssigned: row.idUserAssigned,
+		nameResponsible: row.nameResponsible,
+		userAssigned: row.userAssigned ? { ...row.userAssigned } : null,
+		specialAgent: row.specialAgent,
+		paymentAgent: row.paymentAgent,
+	}
+	const nextIdUser = normalizeUserValue(idUser)
+
+	if (normalizeUserValue(row.idUserAssigned) === nextIdUser) {
+		refModalHandleAgent.value.close()
+		return
+	}
+
+	setAssignedUserUpdating(idOpportunity, true)
+
+	try {
+		const { data, error } = await request(
+			() => changeAssignedUser(idOpportunity, { idUser: nextIdUser }),
+			{ success: true, error: true }
+		)
+
+		const responseData = typeof data?.data !== 'undefined' ? data.data : data
+		const isUpdated = responseData === true || (responseData && typeof responseData === 'object') || nextIdUser === null
+		if (error || !isUpdated) {
+			applyAssignedUserToRow(row, previousAssignedUser)
+			if (!error) ElMessage.error(data?.message ?? 'No se pudo actualizar el responsable.')
+			return
+		}
+
+		const assignedUser = mapAssignedUserFromResponse(responseData === true ? null : responseData, nextIdUser)
+		applyAssignedUserToRow(row, assignedUser)
+		refModalHandleAgent.value.close()
+	} catch (e) {
+		applyAssignedUserToRow(row, previousAssignedUser)
+		ElMessage.error('No se pudo actualizar el responsable.')
+	} finally {
+		setAssignedUserUpdating(idOpportunity, false)
+	}
+}
+
+function clearHotFilterTimer() {
+	if (!hotFilterTimer.value) return
+	clearTimeout(hotFilterTimer.value)
+	hotFilterTimer.value = null
+}
+
 function onFilterData() {
+	clearHotFilterTimer()
 	appliedAdvancedFilters.value = {
 		idHeadquarter: filters.value.idHeadquarter ? Number(filters.value.idHeadquarter) : null,
-		startEnd: filters.value.startEnd ?? null,
+		idOpportunityState: filters.value.idOpportunityState ? Number(filters.value.idOpportunityState) : null,
+		idOpportunityTracking: filters.value.idOpportunityTracking ? Number(filters.value.idOpportunityTracking) : null,
 	}
 	loadTrackingLeads()
 }
 function onChangeTracking() {}
-function handleActionAgent() {}
 
 function runHotFilters() {
-	if (hotFilterTimer.value) clearTimeout(hotFilterTimer.value)
+	clearHotFilterTimer()
 	hotFilterTimer.value = setTimeout(() => {
+		hotFilterTimer.value = null
 		loadTrackingLeads()
 	}, 250)
 }
@@ -530,10 +844,11 @@ watch(selectedUser, (value) => {
 })
 watch(selectedOpportunityState, (value) => {
 	filters.value.idOpportunityState = value
-	runHotFilters()
 })
 watch(selectedTrackingParent, (value) => {
 	filters.value.idOpportunityTracking = value
+})
+watch(() => filters.value.startEnd, () => {
 	runHotFilters()
 })
 

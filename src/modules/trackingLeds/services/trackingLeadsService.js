@@ -20,8 +20,32 @@ export function getOpportunityComments(idOpportunity) {
   return axios.get(`${apiPrefix()}/opportunity/${idOpportunity}/comments`);
 }
 
+export function getCustomerMessagesHistory(idCustomer) {
+  return axios.get(`${apiPrefix()}/customer/${idCustomer}/messages-history`, {
+    headers: {
+      "Content-Type": "application/json; charset=UTF-8",
+    },
+  });
+}
+
 export function createOpportunityComment(idOpportunity, payload) {
   return axios.post(`${apiPrefix()}/opportunity/${idOpportunity}/comment`, payload, {
+    headers: {
+      "Content-Type": "application/json; charset=UTF-8",
+    },
+  });
+}
+
+export function changeOpportunityState(idOpportunity, payload) {
+  return axios.put(`${apiPrefix()}/opportunity/${idOpportunity}/change-state`, payload, {
+    headers: {
+      "Content-Type": "application/json; charset=UTF-8",
+    },
+  });
+}
+
+export function changeAssignedUser(idOpportunity, payload) {
+  return axios.put(`${apiPrefix()}/opportunity/${idOpportunity}/change-user`, payload, {
     headers: {
       "Content-Type": "application/json; charset=UTF-8",
     },
