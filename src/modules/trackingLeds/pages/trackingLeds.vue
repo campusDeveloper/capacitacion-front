@@ -338,7 +338,7 @@ function mapTrackingLead(item) {
 
 	return {
 		id: item.Id ?? item.id,
-		idCustomer: item.idCustomer ?? item.IdCustomer ?? item.customerId ?? item.CustomerId ?? item.id_customer ?? item.customer?.id ?? item.customer?.Id ?? item.Customer?.id ?? item.Customer?.Id ?? null,
+		idCustomer: item.idCustomer ?? item.customerId ?? item.CustomerId ?? item.customer?.id ?? item.Customer?.id ?? null,
 		name: item.Name ?? item.name,
 		phone: item.Phone ?? item.phone,
 		affiliateCategory: mapAffiliateCategory(item.affiliateCategory),
@@ -533,10 +533,14 @@ async function loadUsers() {
 	}
 }
 
-function openHistory(row) {
+async function openHistory(row) {
 	if (!row) return
 	console.log('selected lead', row)
 	const idCustomer = row.idCustomer
+	if (!idCustomer) {
+		ElMessage.warning('Este lead no tiene cliente asociado')
+		return
+	}
 	if (loadingMessagesHistory.value && messagesHistoryCustomerId.value === idCustomer) return
 	refModalHistory.value.open()
 	loadMessagesHistory(idCustomer, row.lastConnection)

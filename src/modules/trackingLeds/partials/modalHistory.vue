@@ -23,6 +23,7 @@
 						<p class="f-tm-12 text-mid-gray-600 pb-1">{{ messageTypeMeta(message.type).name }}</p>
 						<cardChat
 							:identify="message.type == 1"
+							:type="message.type"
 							:message="message.content"
 							class="w-[262px]"
 							classPre="f-t-12"
