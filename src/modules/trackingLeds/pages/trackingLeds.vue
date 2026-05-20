@@ -179,7 +179,7 @@ import { ref, onMounted, watch, computed } from 'vue'
 import { DateFormat } from '@/util/dateFormat.js'
 import { request } from '@request'
 import { ElMessage } from 'element-plus'
-import * as XLSX from 'xlsx'
+import * as XLSX from 'xlsx-style'
 import SelectStatusFollowUp from '@comp/SelectStatusFollowUp.vue'
 import SelectDropdown from '@comp/SelectDropdown.vue'
 import modalSpecializedAgent from '../partials/modalSpecializedAgent.vue'
@@ -630,12 +630,63 @@ function openEditSpecializedAgent(row) {
 	refModalHandleAgent.value.open(optionsUsersAgent.value, row.id, row.idUserAssigned, false, currentAgentName)
 }
 
+function getStateName(idOpportunityState) {
+	if (idOpportunityState == null) return '-'
+	const found = (opportunityStates.value ?? []).find(
+		item => Number(item.id) === Number(idOpportunityState)
+	)
+	return found?.name ?? '-'
+}
+
 function handleExportFile() {
 	if (!filteredTrackingLeads.value.length || loading.value) return
-	const worksheet = XLSX.utils.json_to_sheet(filteredTrackingLeads.value)
+
+	const exportData = filteredTrackingLeads.value.map(lead => ({
+		Nombre: lead.name ?? '-',
+		Telefono: lead.phone ?? '-',
+		Categoria: lead.affiliateCategory ?? '-',
+		Estado: getStateName(lead.idOpportunityState),
+		'Fecha Entrada': lead.checkInDate
+			? DateFormat(lead.checkInDate, 'DD MMM YYYY')
+			: '-',
+		'Fecha Salida': lead.checkOutDate
+			? DateFormat(lead.checkOutDate, 'DD MMM YYYY')
+			: '-',
+		Sede: lead.headquarterName ?? '-',
+		'Tipo Alojamiento': lead.roomType ?? '-',
+		'Cant. Huespedes': lead.guests ?? '-',
+		Responsable:
+			lead.nameResponsible?.trim()
+			|| lead.userAssigned?.name?.trim()
+			|| 'Sin responsable',
+	}))
+
+	const worksheet = XLSX.utils.json_to_sheet(exportData)
+	const headerStyle = { alignment: { horizontal: 'center' } }
+	const bodyStyle = { alignment: { horizontal: 'left' } }
+
+	const totalRows = exportData.length
+
+	// Encabezados: fila 1, columnas 0-9  → A1:J1
+	const headerRange = XLSX.utils.decode_range('A1:J1')
+	for (let c = headerRange.s.c; c <= headerRange.e.c; c++) {
+		const address = XLSX.utils.encode_cell({ r: headerRange.s.r, c })
+		if (worksheet[address]) worksheet[address].s = headerStyle
+	}
+
+	// Cuerpo: filas 2 en adelante, columnas 0-9  → A2:J{totalRows+1}
+	if (totalRows > 0) {
+		for (let r = 1; r <= totalRows; r++) {
+			for (let c = 0; c <= 9; c++) {
+				const address = XLSX.utils.encode_cell({ r, c })
+				if (worksheet[address]) worksheet[address].s = bodyStyle
+			}
+		}
+	}
+
 	const workbook = XLSX.utils.book_new()
-	XLSX.utils.book_append_sheet(workbook, worksheet, 'tracking-leads')
-	XLSX.writeFile(workbook, 'tracking-leads.xlsx')
+	XLSX.utils.book_append_sheet(workbook, worksheet, 'Leads')
+	XLSX.writeFile(workbook, 'leads.xlsx')
 }
 
 function isUpdatingOpportunityState(idOpportunity) {
