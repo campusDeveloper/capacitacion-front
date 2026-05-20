@@ -61,7 +61,7 @@
 					<Button :disabled="loading" class="!w-[86px]" @click="onFilterData">Filtrar</Button>
 				</div>
 			</div>
-			<el-table :data="filteredTrackingLeads" v-loading="loading">
+			<el-table :data="filteredTrackingLeads" v-loading="loading" empty-text="No hay leads disponibles">
 				<el-table-column label="Comentarios" width="60" fixed align="center">
 					<template #header>
 						<i class="icon-message text-xl text-[rgb(var(--xx-color-icons-primary))] cursor-pointer" />
@@ -145,13 +145,13 @@
 				</el-table-column>
 				<el-table-column label="Estados de seguimiento" prop="idOpportunityTracking" width="275">
 					<template #default="scope">
-						<SelectStatusFollowUp v-if="optionsTrackingStates.length > 0" :disabled="loading" isOutline v-model="scope.row.idOpportunityTracking" :options="optionsTrackingStates"
+						<SelectStatusFollowUp v-if="optionsTrackingStates.length > 0" :disabled="loading || isUpdatingTracking(scope.row.id)" isOutline v-model="scope.row.idOpportunityTracking" :options="optionsTrackingStates"
 							@change="onChangeTracking(scope.row, $event)" />
 					</template>
 				</el-table-column>
 				<el-table-column label="Últ. seguimiento" width="140">
 					<template #default="scope">
-						<p>{{ scope.row.lastConnection ? DateFormat(scope.row.lastConnection, 'DD MMM YYYY') : '-' }}</p>
+						<p>{{ scope.row.lastOpportunityTracking ? DateFormat(scope.row.lastOpportunityTracking, 'DD MMM YYYY') : '-' }}</p>
 					</template>
 				</el-table-column>
 				<el-table-column label="Historial" width="95" align="center">
@@ -185,8 +185,7 @@ import SelectDropdown from '@comp/SelectDropdown.vue'
 import modalSpecializedAgent from '../partials/modalSpecializedAgent.vue'
 import modalHistory from '../partials/modalHistory.vue'
 import modalComments from '../partials/modalComments.vue'
-import { getTrackingLeads, getHeadquarters, getUsers, getOpportunityStates, getTrackingParents, changeOpportunityState, changeAssignedUser, getCustomerMessagesHistory } from '../services/trackingLeadsService'
-import { getTrackingOpportunities } from '../../configuration/services/trackingService'
+import { getTrackingLeads, getHeadquarters, getUsers, getOpportunityStates, getTrackingParents, changeOpportunityState, changeAssignedUser, getCustomerMessagesHistory, getOpportunityTracking, changeOpportunityTracking } from '../services/trackingLeadsService'
 
 const refModalHandleAgent = ref()
 const refModalHistory = ref()
@@ -199,6 +198,7 @@ const hotFilterTimer = ref(null)
 const lastRequestId = ref(0)
 const updatingOpportunityStateIds = ref([])
 const updatingAssignedUserIds = ref([])
+const updatingTrackingIds = ref([])
 const loadingMessagesHistory = ref(false)
 const messagesHistory = ref([])
 const messagesHistoryError = ref('')
@@ -362,7 +362,7 @@ function mapTrackingLead(item) {
 		specialAgent: Number(item.specialAgent) === 1,
 		paymentAgent: Number(item.paymentAgent) === 1,
 		lastConnection: item.lastConnection ?? null,
-		lastOpportunityTracking: item.lastOpportunityTracking ?? item.LastOpportunityTracking ?? item.lastTrackingDate ?? item.LastTrackingDate ?? null,
+		lastOpportunityTracking: item.lastOpportunityTracking ?? item.LastOpportunityTracking ?? item.lastTrackingDate ?? item.LastTrackingDate ?? item.UpdatedAt ?? item.updatedAt ?? null,
 		countComments: item.countComments ?? 0,
 	}
 }
@@ -463,11 +463,20 @@ async function loadOpportunityStates() {
 }
 
 async function loadTrackingStates() {
-	const { data, error } = await request(() => getTrackingOpportunities(), { success: false, error: true })
-	if (error) return
+  try {
+    const { data, error } = await request(() => getOpportunityTracking(), { success: false, error: true })
+    if (error) {
+      console.error('Error loading tracking states:', error)
+      optionsTrackingStates.value = []
+      return
+    }
 
-	optionsTrackingStates.value = normalizeTrackingStates(data)
-	console.log('tracking states:', optionsTrackingStates.value)
+    optionsTrackingStates.value = normalizeTrackingStates(data)
+    console.log('tracking states loaded:', optionsTrackingStates.value)
+  } catch (e) {
+    console.error('Exception loading tracking states:', e)
+    optionsTrackingStates.value = []
+  }
 }
 
 async function loadTrackingParents() {
@@ -829,7 +838,57 @@ function onFilterData() {
 	}
 	loadTrackingLeads()
 }
-function onChangeTracking() {}
+
+function isUpdatingTracking(idOpportunity) {
+  return updatingTrackingIds.value.includes(idOpportunity)
+}
+
+function setTrackingUpdating(idOpportunity, value) {
+  if (value) {
+    if (!isUpdatingTracking(idOpportunity)) {
+      updatingTrackingIds.value = [...updatingTrackingIds.value, idOpportunity]
+    }
+    return
+  }
+  updatingTrackingIds.value = updatingTrackingIds.value.filter(id => id !== idOpportunity)
+}
+
+function updateTrackingLocally(idOpportunity, idTrackingChildren) {
+  const lead = trackingLeads.value.find(item => item.id === idOpportunity)
+  if (lead) lead.idOpportunityTracking = idTrackingChildren
+}
+
+async function onChangeTracking(row, value) {
+  if (!row?.id || isUpdatingTracking(row.id)) return
+
+  const previousTracking = normalizeStateValue(row.idOpportunityTracking)
+  const nextTracking = normalizeStateValue(value)
+  if (previousTracking === nextTracking) return
+
+  setTrackingUpdating(row.id, true)
+
+  try {
+    const payload = { idTrackingChildren: nextTracking }
+    const { data, error } = await request(
+      () => changeOpportunityTracking(row.id, payload),
+      { success: true, error: true }
+    )
+
+    const isUpdated = data?.data === true || data === true
+    if (error || !isUpdated) {
+      updateTrackingLocally(row.id, previousTracking)
+      if (!error) ElMessage.error(data?.message ?? 'No se pudo actualizar el estado de seguimiento.')
+      return
+    }
+
+    updateTrackingLocally(row.id, nextTracking)
+  } catch (e) {
+    updateTrackingLocally(row.id, previousTracking)
+    ElMessage.error('No se pudo actualizar el estado de seguimiento.')
+  } finally {
+    setTrackingUpdating(row.id, false)
+  }
+}
 
 function runHotFilters() {
 	clearHotFilterTimer()

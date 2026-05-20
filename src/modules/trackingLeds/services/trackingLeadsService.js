@@ -45,3 +45,11 @@ export function getOpportunityStates() {
 export function getTrackingParents() {
   return axios.get(`${apiPrefix()}/select/seguimiento`);
 }
+
+export function getOpportunityTracking() {
+  return axios.get(`${apiPrefix()}/select/opportunity-tracking`);
+}
+
+export function changeOpportunityTracking(idOpportunity, payload) {
+  return axios.put(`${apiPrefix()}/opportunity/${idOpportunity}/change-tracking`, payload);
+}
