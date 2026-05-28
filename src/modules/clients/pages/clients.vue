@@ -9,8 +9,8 @@
 				</div>
 				<div class="w-[241px]">
 					<p class="pb-1">Desde-hasta</p>
-					<el-date-picker v-model="filters.startEnd" type="daterange" start-placeholder="Desde"
-						end-placeholder="Hasta" class="!w-full" />
+					<el-date-picker v-model="filters.date" type="daterange" start-placeholder="Desde"
+						end-placeholder="Hasta" value-format="YYYY-MM-DD" class="!w-full" />
 				</div>
 				<div class="w-[210px]">
 					<p class="pb-1">Sedes</p>
@@ -22,28 +22,32 @@
 				</div>
 				<Button :disabled="loading" type-style="tertiary" class="w-[86px]"
 					@click="handleFilter">Filtrar</Button>
-				<el-tooltip :disabled="loading" content="Exportar" placement="top">
-					<Button type-style="secondary" class="!p-0" @click="handleExportFile">
+				<el-tooltip :disabled="loading || exporting" content="Exportar" placement="top">
+					<Button :disabled="loading || exporting" type-style="secondary" class="!p-0"
+						@click="handleExportFile">
 						<i class="icon-document-download !text-xl" />
 					</Button>
 				</el-tooltip>
 			</div>
-			<el-table :data="customers">
+			<el-table :data="customers" :key="customers.length" v-loading="loading">
 				<el-table-column label="Tipo de cliente" prop="idCustomerType" width="185" fixed>
 					<template #default="scope">
-						<SelectDropdown :disabled="loading" v-model="scope.row.idCustomerType"
-							:options="optionsTypesSelect"  />
+						<el-select :disabled="loading" :model-value="customerTypeSelectValue(scope.row)"
+							class="custom-select" size="small" placement="right" popper-class="!max-w-[148px]"
+							:style="customerTypeSelectStyle(scope.row)"
+							@update:model-value="updateCustomerType(scope.row, $event)">
+							<el-option v-for="item in optionsTypesSelect" :key="item.id" :label="item.name"
+								:value="item.id" class="d-middle !mb-1 !h-[26px]"
+								:style="`background-color:${item.color} !important; color: rgb(var(--xx-color-white-100))`">
+								<p class="line-clamp-1">{{ item.name }}</p>
+							</el-option>
+						</el-select>
 					</template>
 				</el-table-column>
 				<el-table-column label="Nombre" prop="name" width="180" sortable fixed />
 				<el-table-column label="Teléfono" prop="phone" width="155" fixed />
 				<el-table-column label="Identificación" prop="identification" width="125" />
-				<el-table-column label="Categoría" width="95" align="center">
-					<template #default="scope">
-						<p>A</p>
-					</template>
-				</el-table-column>
-				<el-table-column label="Reserva" prop="number" width="140">
+			<el-table-column label="Reserva" prop="number" width="140">
 					<template #default="scope">
 						<div class="d-middle-bt">
 							<p>{{ scope.row.reservation?.number ?? "Sin reserva" }}</p>
@@ -61,17 +65,22 @@
 								H
 							</p>
 							<el-tooltip :content="checkInStyles(scope.row.reservation).tooltip" placement="top">
-								<i :class="['icon-timer text-lg', checkInStyles(scope.row.reservation).color]"/>
+								<i :class="['icon-timer text-lg', checkInStyles(scope.row.reservation).color]" />
 							</el-tooltip>
 						</div>
 					</template>
 				</el-table-column>
 				<el-table-column label="Fecha reserva" width="210">
 					<template #default="scope">
-						<div class="d-middle-bt">
-							<p>{{ DateFormat(scope.row.reservation?.checkInDate, 'DD MMM YYYY') }} -
-								{{ DateFormat(scope.row.reservation?.checkOutDate, 'DD MMM YYYY') }}</p>
-						</div>
+				<div class="d-middle-bt">
+					<p>{{ scope.row.reservation?.checkInDate ? DateFormat(scope.row.reservation.checkInDate, 'DD MMM YYYY') : '-' }} -
+						{{ scope.row.reservation?.checkOutDate ? DateFormat(scope.row.reservation.checkOutDate, 'DD MMM YYYY') : '-' }}</p>
+				</div>
+					</template>
+				</el-table-column>
+				<el-table-column label="Categoría" width="95" align="center">
+					<template #default="scope">
+						<p>{{ formatAffiliateCategory(getCustomerCategory(scope.row)) }}</p>
 					</template>
 				</el-table-column>
 				<el-table-column label="Sede" width="185">
@@ -88,7 +97,7 @@
 						</div>
 					</template>
 				</el-table-column>
-				<el-table-column label="Numero Huespedes" width="95" align="center">
+				<el-table-column label="Cant. personas" width="95" align="center">
 					<template #default="scope">
 						<div class="d-middle">
 							<p>{{ scope.row.reservation?.countGuests ?? "-" }}</p>
@@ -97,15 +106,17 @@
 				</el-table-column>
 				<el-table-column label="Valor Pagado" prop="value" width="95" align="right">
 					<template #default="scope">
-						<p>{{ currencyFormat(scope.row.reservation?.valuePaid) ?? "-" }}</p>
+						<p>{{ scope.row.reservation?.valuePaid ? currencyFormat(scope.row.reservation.valuePaid) : "-"
+							}}</p>
 					</template>
 				</el-table-column>
 				<el-table-column label="Valor Total" prop="value" width="95" align="right">
 					<template #default="scope">
-						<p>{{ currencyFormat(scope.row.reservation?.valueTotal) ?? "-" }}</p>
+						<p>{{ scope.row.reservation?.valueTotal ? currencyFormat(scope.row.reservation.valueTotal) : "-"
+							}}</p>
 					</template>
 				</el-table-column>
-				<el-table-column label="Historial Chat" width="95" align="center">
+				<el-table-column label="Historial" width="95" align="center">
 					<template #default="scope">
 						<i class="icon-document-text text-mid-gray-300 text-xl cursor-pointer"
 							@click="openHistory(scope.row)" />
@@ -122,6 +133,7 @@
 					</template>
 				</el-table-column>
 			</el-table>
+
 		</div>
 		<Modal ref="refModalInactiveClient" action="Activar" cancel="Cancelar" title="Activar cliente" width="360"
 			:onAction="handleInactiveClient">
@@ -133,21 +145,22 @@
 		</Modal>
 		<modalHistory ref="refModalHistory" />
 		<modalReservationHistory ref="refModalReservationHistory" />
-		<modalComments ref="refModalComments" @increase-comment="handleIncreaseComment" />
+		<modalComments ref="refModalComments" @update-comment-count="handleUpdateCommentCount" />
 	</section>
 </template>
 
 <script setup>
-import { onBeforeMount, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { DateFormat } from '@/util/dateFormat.js'
 import { currencyFormat } from '@/util/currencyFormat.js'
 import { request } from "@request";
 import { dateDifferenceInHours } from '../../../util/hourDifference';
 import * as XLSX from 'xlsx';
-import SelectDropdown from '@comp/SelectDropdown.vue'
+import { ElNotification } from 'element-plus';
 import modalHistory from '../partials/modalHistory.vue'
 import modalReservationHistory from '../partials/modalReservationHistory.vue'
 import modalComments from '../partials/modalComments.vue'
+import { getClients, getHeadquarters, getCustomerTypes, changeCustomerType, getCustomerComments } from '../services/clientService'
 
 const refModalInactiveClient = ref()
 const refModalActiveClient = ref()
@@ -156,6 +169,8 @@ const refModalReservationHistory = ref()
 const refModalComments = ref()
 
 const loading = ref(false)
+const loadingCommentCounts = ref(false)
+const exporting = ref(false)
 
 const checkInState = [
 	{ tooltip: 'no disponible', color: 'text-mid-gray-300' },
@@ -165,9 +180,9 @@ const checkInState = [
 ]
 
 const filters = ref({
-	startEnd: null,
+	date: '',
 	idHeadquarter: null,
-	name: null
+	name: ''
 })
 
 const customers = ref([])
@@ -176,27 +191,237 @@ const optionsHQSelect = ref([])
 
 const optionsTypesSelect = ref([])
 
-/* Functions */
+const CUSTOMER_TYPE_EMPTY_VALUE = 'Sin etiqueta'
 
-async function handleFilter() {
-	if (loading.value) return
+const fetchClients = async () => {
+	loading.value = true;
 
-	const { value: filtros } = filters
+	try {
+		const params = { ...filters.value };
 
-	const getFilters = {
-		name: filtros.name,
-		idHeadquarter: filtros.idHeadquarter
+		if (params.date && Array.isArray(params.date)) {
+			params.dateFrom = params.date[0];
+			params.dateTo = params.date[1];
+			delete params.date;
+		}
+
+		if (params.idHeadquarter) {
+			params.headquarter = params.idHeadquarter;
+			delete params.idHeadquarter;
+		}
+
+		const { data, error } = await request(() => getClients(params), false);
+
+		if (error) {
+			customers.value = [];
+			return;
+		}
+
+		const array = Array.isArray(data) ? data : (data?.data || []);
+		customers.value = array;
+		await syncCommentCounts();
+
+		console.log('CLIENTS 👉', array);
+		console.log('IS ARRAY:', Array.isArray(array));
+	} finally {
+		loading.value = false;
 	}
+};
 
-	if (filtros.startEnd) {
-		getFilters.reservationDateStart = filtros.startEnd[0];
-		getFilters.reservationDateEnd = filtros.startEnd[1];
+async function syncCommentCounts() {
+	if (loadingCommentCounts.value || customers.value.length === 0) return
+
+	loadingCommentCounts.value = true
+
+	try {
+		await Promise.all(customers.value.map(async (customer) => {
+			const idCustomer = getCustomerId(customer)
+			if (!idCustomer) return
+
+			const { data, error } = await request(() => getCustomerComments(idCustomer), false)
+			if (error) return
+
+			const comments = Array.isArray(data) ? data : (data?.data || [])
+			customer.countComments = comments.length
+		}))
+	} finally {
+		loadingCommentCounts.value = false
 	}
-
 }
 
+const fetchHeadquarters = async () => {
+	const { data, error } = await request(() => getHeadquarters(), false);
+
+	if (error) {
+		console.error('Error sedes:', error);
+		optionsHQSelect.value = [];
+		return;
+	}
+
+	const array = Array.isArray(data) ? data : (data?.data || []);
+	optionsHQSelect.value = array;
+};
+
+const fetchCustomerTypes = async () => {
+	const { data, error } = await request(() => getCustomerTypes(), false);
+
+	if (error) {
+		console.error('Error tipos:', error);
+		optionsTypesSelect.value = [];
+		return;
+	}
+
+	const array = Array.isArray(data) ? data : (data?.data || []);
+	optionsTypesSelect.value = array.map(item => ({ ...item, id: item.idType }));
+};
+
+/* Functions */
+
+function customerTypeSelectValue(row) {
+	if (row?.idCustomerType == null) return CUSTOMER_TYPE_EMPTY_VALUE
+
+	return hasActiveCustomerType(row) ? row.idCustomerType : CUSTOMER_TYPE_EMPTY_VALUE
+}
+
+function customerTypeSelectStyle(row) {
+	const selectedOption = getActiveCustomerType(row)
+	const colorBg = selectedOption?.color ?? 'rgb(var(--xx-color-gray-300))'
+	const colorContentLight = 'rgb(var(--xx-color-white-400))'
+
+	return `--color-bg: ${colorBg}; --color-content-light: ${colorContentLight};`
+}
+
+function getActiveCustomerType(row) {
+	return optionsTypesSelect.value.find(type => type.id == row?.idCustomerType)
+}
+
+function hasActiveCustomerType(row) {
+	return !!getActiveCustomerType(row)
+}
+
+function getCustomerId(row) {
+	return row?.idCustomer ?? row?.id
+}
+
+async function updateCustomerType(row, value) {
+	if (!row || loading.value || value === CUSTOMER_TYPE_EMPTY_VALUE || value == null) return
+
+	const idCustomer = getCustomerId(row)
+	if (!idCustomer || row.idCustomerType === value) return
+
+	loading.value = true
+
+	try {
+		const { error } = await request(() => changeCustomerType(idCustomer, value), false)
+		if (error) return
+
+		row.idCustomerType = value
+	} finally {
+		loading.value = false
+	}
+}
+
+const handleFilter = () => {
+	fetchClients();
+};
+
 function handleExportFile() {
-	if (!customers.value || loading.value) return
+	if (loading.value || exporting.value) return
+
+	if (!customers.value?.length) {
+		ElNotification({
+			title: 'Sin datos',
+			message: 'No hay clientes para exportar.',
+			type: 'warning',
+		})
+		return
+	}
+
+	exporting.value = true
+
+	try {
+		const rows = customers.value.map(mapCustomerExportRow)
+		const worksheet = XLSX.utils.json_to_sheet(rows, {
+			header: [
+				'Nombre',
+				'Telefono',
+				'Identificacion',
+				'Categoria',
+				'Tipo de Cliente',
+				'N. Reserva',
+				'Fecha Entrada',
+				'Fecha Salida',
+				'Sede',
+				'Tipo Alojamiento',
+				'Cant. Huespedes',
+				'Valor',
+			],
+		})
+
+		worksheet['!cols'] = [
+			{ wch: 28 },
+			{ wch: 16 },
+			{ wch: 18 },
+			{ wch: 14 },
+			{ wch: 20 },
+			{ wch: 16 },
+			{ wch: 16 },
+			{ wch: 16 },
+			{ wch: 22 },
+			{ wch: 22 },
+			{ wch: 16 },
+			{ wch: 18 },
+		]
+
+		const workbook = XLSX.utils.book_new()
+		XLSX.utils.book_append_sheet(workbook, worksheet, 'Clientes')
+		XLSX.writeFile(workbook, `clientes_${DateFormat(new Date(), 'YYYY-MM-DD')}.xlsx`)
+	} catch (error) {
+		ElNotification({
+			title: 'Error',
+			message: 'No fue posible exportar los clientes.',
+			type: 'error',
+		})
+	} finally {
+		exporting.value = false
+	}
+}
+
+function mapCustomerExportRow(customer) {
+	const reservation = customer?.reservation ?? {}
+
+	return {
+		'Nombre': customer?.name ?? '-',
+		'Telefono': customer?.phone ?? '-',
+		'Identificacion': customer?.identification ?? '-',
+		'Categoria': formatAffiliateCategory(getCustomerCategory(customer)),
+		'Tipo de Cliente': getActiveCustomerType(customer)?.name ?? CUSTOMER_TYPE_EMPTY_VALUE,
+		'N. Reserva': reservation?.number ?? 'Sin reserva',
+		'Fecha Entrada': reservation?.checkInDate ? DateFormat(reservation.checkInDate, 'DD MMM YYYY') : '-',
+		'Fecha Salida': reservation?.checkOutDate ? DateFormat(reservation.checkOutDate, 'DD MMM YYYY') : '-',
+		'Sede': reservation?.headquarter ?? '-',
+		'Tipo Alojamiento': reservation?.roomType ?? '-',
+		'Cant. Huespedes': reservation?.countGuests ?? '-',
+		'Valor': reservation?.valueTotal ? currencyFormat(reservation.valueTotal) : '-',
+	}
+}
+
+function getCustomerCategory(customer) {
+	const reservation = customer?.reservation ?? {}
+
+	return customer?.category
+		?? customer?.affiliateCategory
+		?? customer?.idCategory
+		?? customer?.Category
+		?? customer?.AffiliateCategory
+		?? customer?.IdCategory
+		?? reservation?.category
+		?? reservation?.affiliateCategory
+		?? reservation?.idCategory
+		?? reservation?.Category
+		?? reservation?.AffiliateCategory
+		?? reservation?.IdCategory
+		?? null
 }
 
 async function onChangePriority(value, row) {
@@ -204,8 +429,16 @@ async function onChangePriority(value, row) {
 
 }
 
-function formatAffiliateCategory() {
-	switch (1) {
+function formatAffiliateCategory(category) {
+	const normalizedCategory = typeof category === 'string' && category.trim() !== ''
+		? Number(category)
+		: category
+
+	if (typeof category === 'string' && Number.isNaN(normalizedCategory)) {
+		return category
+	}
+
+	switch (normalizedCategory) {
 		case 1:
 			return "A";
 		case 2:
@@ -219,15 +452,16 @@ function formatAffiliateCategory() {
 	}
 }
 
-function checkInHourDiff() {
-	
+function checkInHourDiff(reservation) {
+	if (!reservation || !reservation.checkInDate) return '';
+	return dateDifferenceInHours(new Date(), reservation.checkInDate + " 15:00");
 }
 
 function checkInStyles(reservation) {
 	let state = 0
 
-	if (!reservation.id) return {
-		tooltip: `Pre-checkin ${ checkInState[state].tooltip }`,
+	if (!reservation) return {
+		tooltip: `Pre-checkin ${checkInState[state].tooltip}`,
 		color: checkInState[state].color
 	}
 
@@ -240,30 +474,48 @@ function checkInStyles(reservation) {
 	}
 
 	return {
-		tooltip: `Pre-checkin ${ checkInState[state].tooltip }`,
+		tooltip: `Pre-checkin ${checkInState[state].tooltip}`,
 		color: checkInState[state].color
 	}
 }
 
-function handleIncreaseComment() {
-	
+function handleUpdateCommentCount(idCustomer, countComments) {
+	const customer = customers.value.find(item => getCustomerId(item) == idCustomer)
+	if (!customer) return
+
+	customer.countComments = countComments
 }
 
-function openReservationHistory() {
-	refModalReservationHistory.value.open()
+function openReservationHistory(row) {
+	if (!row || loading.value) return
+
+	const idCustomer = getCustomerId(row)
+	if (!idCustomer) return
+
+	refModalReservationHistory.value.open(idCustomer)
 }
 
-function openHistory() {
-	refModalHistory.value.open()
+function openHistory(row) {
+	if (!row || loading.value) return
+
+	const idCustomer = getCustomerId(row)
+	if (!idCustomer) return
+
+	refModalHistory.value.open(idCustomer, row.lastConnection)
 }
 
-function openModalComments() {
-	refModalComments.value.open()
+function openModalComments(row) {
+	if (!row || loading.value) return
+
+	const idCustomer = getCustomerId(row)
+	if (!idCustomer) return
+
+	refModalComments.value.open(idCustomer)
 }
 
 function toggleState(row) {  // ← SOLO 'row'
 	refModalActiveClient.value.open()
-	
+
 }
 
 function handleInactiveClient() {
@@ -271,5 +523,9 @@ function handleInactiveClient() {
 
 function handleActiveClient() {
 }
+
+onMounted(async () => {
+	await Promise.all([fetchHeadquarters(), fetchCustomerTypes(), fetchClients()]);
+});
 
 </script>

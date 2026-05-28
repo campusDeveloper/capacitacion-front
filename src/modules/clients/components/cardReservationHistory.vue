@@ -17,7 +17,7 @@
 			<i class="icon-profile-2user text-mid-gray-300 text-base"/>
 			<p class="f-t-12 ps-1">Cant. personas: {{ data.countGuests }}</p>
 		</div>
-		<p class="f-tm-14">Valor: {{ currencyFormat(data.value) }}</p>
+		<p class="f-tm-14">Valor: $ {{ currencyFormat(data.value) ?? '-' }} </p>
 	</div>
 </template>
 
