@@ -47,7 +47,7 @@
 			<br />
 			<p>Recuerda que también puedes inactivarlo para deshabilitar sus funciones en el sistema</p>
 		</Modal>
-		<modalManageUser ref="refModalManageUser" @createUser="getLoadUsers" @editUser="getLoadUsers" />
+		<modalManageUser ref="refModalManageUser" @success="getLoadUsers" />
 		<modalEditSedes ref="refModalEditSedes" @editUser="getLoadUsers" />
 		<modalPermissionSettings ref="refModalPermissionSettings" />
 	</section>
@@ -60,6 +60,7 @@ import modalEditSedes from '../partials/modalEditSedes.vue';
 import modalPermissionSettings from '../partials/modalPermissionSettings.vue';
 import userCard from '../components/userCard.vue';
 import { request } from '@request'
+import { getUsers, deleteUser, changeUserState } from '../services/userService';
 
 const refModalActiveUser = ref()
 const refModalInactiveUser = ref()
@@ -71,9 +72,10 @@ const refModalPermissionSettings = ref()
 const userTypeFilter = ref(null)
 const search = ref(null)
 const usersData = ref([])
+const userToDeleteId = ref(null)
 
-const currentToggleId = ref(null)
-const currentDeleteId = ref(null)
+const userToChangeStateId = ref(null)
+const userToChangeStateValue = ref(null)
 
 const userTypeOptions = ref([
 	{
@@ -88,6 +90,17 @@ const userTypeOptions = ref([
 
 let searchTimeout = null;
 
+async function getLoadUsers() {
+	const { data, error } = await request(() => getUsers());
+
+	if (error) return;
+	usersData.value = data?.data || [];
+}
+
+onBeforeMount(() => {
+	getLoadUsers();
+});
+
 function openCreateUser() {
 	refModalManageUser.value.open(1)
 }
@@ -95,25 +108,37 @@ function openCreateUser() {
 function openConfigPermissions() {
 	refModalPermissionSettings.value.open()
 }
-
-function openEditUser() {
-	refModalManageUser.value.open()
+//
+function openEditUser(user) {
+	refModalManageUser.value.open(2, user)
 }
 
-function openDeleteUser() {
+function openDeleteUser(user) {
+	userToDeleteId.value = user.id
 	refModalDeleteUser.value.open()
 }
 
 async function handleDeleteUser() {
-	
+	const { error } = await request(() => deleteUser(userToDeleteId.value));
+    
+    if (error) {
+        console.error("Hubo un error al eliminar");
+        return;
+    }
+    refModalDeleteUser.value.close();
+
+	getLoadUsers();
 }
 
-function openEditSedes() {
-	refModalEditSedes.value.open()
+function openEditSedes(user) {
+	refModalEditSedes.value.open(user)
 }
 
 function handleChangeState(data) {
-	if (true) {
+	userToChangeStateId.value = data.id
+	userToChangeStateValue.value = data.state ? 0 : 1
+
+	if (userToChangeStateValue.value === 1) {
 		refModalActiveUser.value.open()
 	} else {
 		refModalInactiveUser.value.open()
@@ -121,17 +146,32 @@ function handleChangeState(data) {
 }
 
 async function handleInactiveUser() {
-	
+	await updateUserState()
 }
 
 async function handleActiveUser() {
-	
+	await updateUserState()
+}
+
+async function updateUserState() {
+	if (!userToChangeStateId.value && userToChangeStateId.value !== 0) return
+
+	const payload = {
+		state: userToChangeStateValue.value
+	}
+
+	const { error } = await request(() => changeUserState(userToChangeStateId.value, payload));
+
+	if (error) return;
+
+	refModalActiveUser.value.close()
+	refModalInactiveUser.value.close()
+	userToChangeStateId.value = null
+	userToChangeStateValue.value = null
+	getLoadUsers()
 }
 
 function openLinkForza() {
-}
-
-function deleteUser() {
 }
 
 function toggleUserState() {

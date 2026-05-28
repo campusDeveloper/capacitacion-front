@@ -89,11 +89,15 @@
 import { ref } from 'vue';
 import { Form, Field } from 'vee-validate'
 import { request } from '@request'
+import { createUser } from '../services/userService';
+import { updateUser } from '../services/userService';
+import { getHeadquarters } from '../services/userService';
 
 const refModalManageUser = ref()
 const refFormManage = ref()
 const isCreate = ref(1);
 const isLoaded = ref(false)
+const emit = defineEmits(['success'])
 
 const model = ref({
     name: null,
@@ -115,16 +119,104 @@ const secondarySede = ref([])
 const editingUserId = ref(null);
 
 /* Functions */
-function onSubmitClient() {
- 
+function resetFormData() {
+    model.value = {
+        name: null,
+        email: null,
+        password: null,
+        specialAgent: 0,
+        paymentAgent: 0,
+        idRol: 1,
+        idSede: null
+    }
+    secondarySede.value = []
+    editingUserId.value = null
 }
 
+async function loadHeadquarters() {
+    const { data, error } = await request(() => getHeadquarters(), { success: false, error: true })
+    if (error) return
 
-async function open() {
-   refModalManageUser.value.open()
+    const rows = Array.isArray(data?.data) ? data.data : []
+    optionsSede.value = rows.filter((item) => item.idHeadquarter !== null && item.state !== 0)
+    secondarySede.value = optionsSede.value.map((item) => ({
+        ...item,
+        value: 0
+    }))
+}
+//
+async function onSubmitClient() {
+    const validationResult = await refFormManage.value?.validate()
+    if (!validationResult?.valid) return
+
+    const payload = {
+        name: model.value.name?.trim(),
+        email: model.value.email?.trim(),
+        type: model.value.idRol,
+        mainHeadquarter: model.value.idSede,
+        headquarters: secondarySede.value
+            .filter((item) => item.value === 1)
+            .map((item) => item.idHeadquarter),
+        specialAgent: model.value.specialAgent ? 1 : 0,
+        paymentAgent: model.value.paymentAgent ? 1 : 0
+    }
+
+    if (model.value.password) {
+        payload.password = model.value.password;
+    }
+    
+    if (isCreate.value !== 1 && !editingUserId.value) {
+        return; 
+    }
+
+
+    let response;
+    if (isCreate.value === 1) {
+        response = await request(() => createUser(payload));
+    } else {
+        response = await request(() => updateUser(editingUserId.value, payload));
+    }
+
+    if (response.error) return
+
+    close()
+    emit('success')
+}
+
+////
+async function open(type = 1, userData = null) {
+    isCreate.value = type
+    isLoaded.value = false
+    refFormManage.value?.resetForm()
+    resetFormData()
+    await loadHeadquarters()
+
+
+    if (type === 2 && userData) {
+        editingUserId.value = userData.id; 
+        
+        model.value.name = userData.name;
+        model.value.email = userData.email;
+        model.value.password = null; 
+        model.value.specialAgent = userData.specialAgent;
+        model.value.paymentAgent = userData.paymentAgent;
+        model.value.idRol = userData.type; 
+        
+        const sedeEncontrada = optionsSede.value.find(s => s.name === userData.headquarter);
+        if (sedeEncontrada) {
+            model.value.idSede = sedeEncontrada.idHeadquarter;
+        }
+    }
+
+    isLoaded.value = true
+    refModalManageUser.value.open()
 }
 
 function onSedeChange() {
+    secondarySede.value = secondarySede.value.map((item) => ({
+        ...item,
+        value: item.idHeadquarter === model.value.idSede ? 0 : item.value
+    }))
 }
 
 function close() {
