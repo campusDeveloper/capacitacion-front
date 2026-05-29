@@ -179,7 +179,7 @@ import { ref, onMounted, watch, computed } from 'vue'
 import { DateFormat } from '@/util/dateFormat.js'
 import { request } from '@request'
 import { ElMessage } from 'element-plus'
-import * as XLSX from 'xlsx-style'
+import * as XLSX from 'xlsx'
 import SelectStatusFollowUp from '@comp/SelectStatusFollowUp.vue'
 import SelectDropdown from '@comp/SelectDropdown.vue'
 import modalSpecializedAgent from '../partials/modalSpecializedAgent.vue'
@@ -662,27 +662,6 @@ function handleExportFile() {
 	}))
 
 	const worksheet = XLSX.utils.json_to_sheet(exportData)
-	const headerStyle = { alignment: { horizontal: 'center' } }
-	const bodyStyle = { alignment: { horizontal: 'left' } }
-
-	const totalRows = exportData.length
-
-	// Encabezados: fila 1, columnas 0-9  → A1:J1
-	const headerRange = XLSX.utils.decode_range('A1:J1')
-	for (let c = headerRange.s.c; c <= headerRange.e.c; c++) {
-		const address = XLSX.utils.encode_cell({ r: headerRange.s.r, c })
-		if (worksheet[address]) worksheet[address].s = headerStyle
-	}
-
-	// Cuerpo: filas 2 en adelante, columnas 0-9  → A2:J{totalRows+1}
-	if (totalRows > 0) {
-		for (let r = 1; r <= totalRows; r++) {
-			for (let c = 0; c <= 9; c++) {
-				const address = XLSX.utils.encode_cell({ r, c })
-				if (worksheet[address]) worksheet[address].s = bodyStyle
-			}
-		}
-	}
 
 	const workbook = XLSX.utils.book_new()
 	XLSX.utils.book_append_sheet(workbook, worksheet, 'Leads')
