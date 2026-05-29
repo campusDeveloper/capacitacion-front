@@ -9,21 +9,27 @@
 					show-word-limit @update:model-value="handleNameChange($event, field.onChange)" @blur="field.onBlur" />
 				<Error :local="errorMessage" server="name" />
 			</Field>
-			<div class="d-middle-center gap-x-4 my-5">
-				<div class="inline-flex items-center rounded-lg h-9 border f-t-14 px-2 whitespace-nowrap transition-all"
-					:style="{
-						borderColor: form.color,
-						color: form.color,
-						minWidth: '84px',
-						maxWidth: '300px'
-					}">
-					{{ form.name }}
+			<Field name="color" rules="required" v-slot="{ field, errorMessage }">
+				<div class="d-middle-center gap-x-4 mt-5 mb-0">
+					<div class="inline-flex items-center rounded-lg h-9 border f-t-14 px-2 whitespace-nowrap transition-all"
+						:style="{
+							borderColor: form.color,
+							color: form.color,
+							minWidth: '84px',
+							maxWidth: '300px'
+						}">
+						{{ form.name }}
+					</div>
+					<popoverPickerColor :model-value="form.color"
+						@update:model-value="handleColorChange($event, field.onChange)" />
 				</div>
-				<popoverPickerColor v-model="form.color" />
-			</div>
+				<div class="d-middle-center whitespace-nowrap">
+					<Error :local="errorMessage" server="color" />
+				</div>
+			</Field>
 		</Form>
 		<template v-if="isAdd">
-			<p class="text-black-300 f-t-14">Agrega los estados de seguimiento asignando un titulo y un color a cada uno.</p>
+			<p class="text-black-300 f-t-14 mt-4 mb-4">Agrega los estados de seguimiento asignando un titulo y un color a cada uno.</p>
 			<template v-for="(value, index) in subList" :key="index">
 				<div class="d-middle text-mid-gray-300 gap-x-3 my-4 min-h-9">
 					<div class="d-middle-center rounded-lg h-[34px] w-[116px] border f-t-14 px-2"
@@ -35,19 +41,23 @@
 			</template>
 			<Form ref="refFormTitles" @submit="addContent">
 				<div class="d-middle gap-x-3">
-					<Field name="titleName" rules="required|max:40" v-slot="{ field, errorMessage }">
-						<div>
+					<Field name="titleName" label="titulo" rules="required|max:40" v-slot="{ field, errorMessage }">
+						<div class="relative">
 							<el-input :model-value="subFormValues.name" placeholder="Agregar titulo" class="!w-[222px]"
 								maxlength="40" show-word-limit
 								@update:model-value="handleSubNameChange($event, field.onChange)" @blur="field.onBlur" />
-							<Error :local="errorMessage" server="name" />
+							<div class="absolute top-full left-0 whitespace-nowrap text-xs pt-1 w-max">
+								<Error :local="errorMessage" server="name" />
+							</div>
 						</div>
 					</Field>
-					<Field name="titleColor" rules="required" v-slot="{ field, errorMessage }">
-						<div>
+					<Field name="titleColor" label="color" rules="required" v-slot="{ field, errorMessage }">
+						<div class="relative">
 							<popoverPickerColor :model-value="subFormValues.color"
 								@update:model-value="handleSubColorChange($event, field.onChange)" />
-							<Error :local="errorMessage" server="color" />
+							<div class="absolute top-full left-0 whitespace-nowrap text-xs pt-1 w-max">
+								<Error :local="errorMessage" server="color" />
+							</div>
 						</div>
 					</Field>
 
@@ -101,6 +111,11 @@ function handleNameChange(value, onChange) {
 
 function handleSubNameChange(value, onChange) {
 	subFormValues.value.name = value;
+	onChange(value);
+}
+
+function handleColorChange(value, onChange) {
+	form.value.color = value;
 	onChange(value);
 }
 
