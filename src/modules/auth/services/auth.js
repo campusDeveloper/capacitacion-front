@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 export async function login(email, password) {
-	const response = await axios.post('/api/login', {
+	const response = await axios.post('/login', {
 		email,
 		password
 	})

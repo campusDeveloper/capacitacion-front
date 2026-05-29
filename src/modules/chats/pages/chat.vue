@@ -34,10 +34,10 @@
 					</transition>
 
 					<div
-						v-if="true"
+						v-if="chatsFiltered.length"
 						:class="['vstack rounded-lg gap-y-4 border border-[transparent]', { 'bg-brand-50 p-3': notReadFilter }]"
 					>
-						<cardChat v-for="item in 5" :key="item.idOpportunity" :data="item"
+						<cardChat v-for="item in chatsFiltered" :key="item.idOpportunity" :data="item"
 							:selected="route.params.idChat == item.idOpportunity" @click="toGoChatDetail(item)" />
 					</div>
 					<div v-else-if="!loading" class="text-center">
@@ -62,6 +62,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { request } from "@request";
 import cardChat from '../components/cardChat.vue';
 import modalFilters from '../partials/modalFilters.vue';
+import { getChatLeads } from '../services/chatService';
 
 const route = useRoute()
 const router = useRouter()
@@ -85,12 +86,27 @@ const filter = ref({
 /* Async Functions  */
 
 async function handleFilter() {
-	
-	router.push({ name: 'chats' })
+	loading.value = true
+
+	const params = Object.fromEntries(
+		Object.entries(filter.value).filter(([, value]) => value !== null && value !== '')
+	)
+
+	const { data, error } = await request(() => getChatLeads(params), { success: false })
+
+	if (!error) {
+		allChats.value = data?.data ?? []
+		unread.value = allChats.value.reduce((total, chat) => total + Number(chat.chat?.unreadMessages ?? 0), 0)
+		applyUnreadFilter()
+	}
+
+	loading.value = false
+	if (route.name !== 'chats') router.push({ name: 'chats' })
 }
 
-function filterChatdUnread() {
-	
+function filterChatdUnread(value) {
+	notReadFilter.value = value
+	applyUnreadFilter()
 }
 
 
@@ -100,8 +116,15 @@ function openFilters() {
 }
 
 function toGoChatDetail(selected) {
-	router.push({ name: 'chat.details', params: { idChat: 1 } })
-	
+	router.push({ name: 'chat.details', params: { idChat: selected.idOpportunity } })
 }
+
+function applyUnreadFilter() {
+	chatsFiltered.value = notReadFilter.value
+		? allChats.value.filter(item => Number(item.chat?.unreadMessages ?? 0) > 0)
+		: allChats.value
+}
+
+onBeforeMount(handleFilter)
 
 </script>

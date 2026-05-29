@@ -33,6 +33,11 @@
 <script setup>
 import { ref } from 'vue';
 import { request } from "@request";
+import {
+	getExceptionsOptions,
+	getHeadquartersOptions,
+	getTrackingOptions,
+} from '../services/chatService';
 
 const props = defineProps({
 	filter: {
@@ -66,7 +71,23 @@ function handleFilterChats() {
 
 /* Async Functions */
 async function open() {
+	if (!optionsHeadquarters.value.length) await loadOptions()
 	refModalFilters.value.open()
+}
+
+async function loadOptions() {
+	loading.value = true
+
+	const [headquarters, exceptions, tracking] = await Promise.all([
+		request(() => getHeadquartersOptions(), { success: false }),
+		request(() => getExceptionsOptions(), { success: false }),
+		request(() => getTrackingOptions(), { success: false }),
+	])
+
+	optionsHeadquarters.value = headquarters.data?.data ?? []
+	optionsExceptions.value = exceptions.data?.data ?? []
+	optionsTracking.value = tracking.data?.data ?? []
+	loading.value = false
 }
 
 defineExpose({

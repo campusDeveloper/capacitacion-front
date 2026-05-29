@@ -71,6 +71,14 @@ import CardComments from '@comp/CardComments.vue';
 import SelectStatusFollowUp from '@comp/SelectStatusFollowUp.vue'
 import Tags from '@comp/Tags.vue';
 import modalManagePayment from './modalManagePayment.vue'
+import {
+	createOpportunityComment,
+	getBusinessUsersOptions,
+	getHeadquartersOptions,
+	getOpportunityComments,
+	getTrackingOptions,
+	updateLeadAssignedUser,
+} from '../services/chatService';
 
 const refModalManagePayment = ref()
 
@@ -92,6 +100,7 @@ const optionsTracking = ref([])
 const optionsHeadquarters = ref([])
 
 const optionsResponsible = ref([])
+const emit = defineEmits(['refresh'])
 
 /* Async Functions */
 
@@ -101,7 +110,11 @@ async function createPaymentChat(payload) {
 }
 
 async function updateOpportunityChangeUser(idUser) {
-	
+	if (!idUser) return
+	loading.value = true
+	const { error } = await request(() => updateLeadAssignedUser(props.info.idOpportunity, idUser), true)
+	if (!error) emit('refresh')
+	loading.value = false
 }
 
 async function updateOpportunityChangeTracking(idTrackingChildren) {
@@ -113,9 +126,14 @@ async function updateOpportunityChangeHeadquarter(idHeadquarter) {
 }
 
 
-async function sendNewComment() {
-	if (!writeMessage.value) return
+async function sendNewComment(message) {
+	const comment = (message ?? writeMessage.value).trim()
+	if (!comment) return
 
+	loading.value = true
+	const { error } = await request(() => createOpportunityComment(props.info.idOpportunity, comment), true)
+	if (!error) await loadComments()
+	loading.value = false
 }
 
 /* Functions */
@@ -124,7 +142,7 @@ function openManagePayment() {
 }
 
 function formatAffiliateCategory() {
-	switch (1) {
+	switch (props.info.affiliateCategory) {
 		case 1:
 			return "A";
 		case 2:
@@ -143,5 +161,42 @@ function capitalize(name) {
 
 	return name.trim()[0].toUpperCase()
 }
+
+async function loadInitialData() {
+	loading.value = true
+
+	const [tracking, headquarters, responsible, comments] = await Promise.all([
+		request(() => getTrackingOptions(), { success: false }),
+		request(() => getHeadquartersOptions(), { success: false }),
+		request(() => getBusinessUsersOptions(), { success: false }),
+		request(() => getOpportunityComments(props.info.idOpportunity), { success: false }),
+	])
+
+	optionsTracking.value = tracking.data?.data ?? []
+	optionsHeadquarters.value = headquarters.data?.data ?? []
+	optionsResponsible.value = responsible.data?.data ?? []
+	opportunitiesComments.value = normalizeComments(comments.data?.data ?? [])
+	loading.value = false
+}
+
+async function loadComments() {
+	const { data, error } = await request(() => getOpportunityComments(props.info.idOpportunity), { success: false })
+	if (!error) opportunitiesComments.value = normalizeComments(data?.data ?? [])
+}
+
+function normalizeComments(comments) {
+	return comments.map(comment => ({
+		idComment: comment.idComment ?? comment.IdComment,
+		comment: comment.comment ?? comment.Comment,
+		createdAt: comment.createdAt ?? comment.CreatedAt,
+		creator: {
+			name: comment.creator?.name ?? comment.user,
+		},
+	}))
+}
+
+watch(() => props.info?.idOpportunity, (idOpportunity) => {
+	if (idOpportunity) loadInitialData()
+}, { immediate: true })
 
 </script>

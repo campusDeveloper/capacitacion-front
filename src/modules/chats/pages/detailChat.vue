@@ -1,18 +1,18 @@
 <template>
-	<div  class="flex w-full bg-blue-50">
+	<div class="flex w-full bg-blue-50">
 		<div class="vstack w-full min-w-[574px]">
 			<div
 				class="d-middle-bt w-full bg-white-200 min-h-[58px] shadow-[0px_1px_2px_0px_rgba(191,191,191,0.5)] px-5">
 				<p class="f-tm-16">Detalle del chat</p>
-				<div class="d-middle gap-x-2 f-t-12">
+				<div v-if="chatDetails" class="d-middle gap-x-2 f-t-12">
 					<div v-if="chatDetails.exception"
 						class="d-middle rounded-lg bg-red-s-50 px-2 text-red-s-600 h-[26px] me-2">
 						<i class="icon-info-circle text-lg" />
 						<p class="f-t-12">{{ chatDetails.exception }}</p>
 					</div>
 					<p>Admin</p>
-					<el-switch :disabled="isLoadingMore" v-model="chatDetails.mode" :active-value="1" :inactive-value="2" size="small"
-						:before-change="() => handleChangeSwitch(chatDetails.mode)" />
+					<el-switch :disabled="isLoadingMore" v-model="chatDetails.mode" :active-value="1" :inactive-value="2"
+						size="small" :before-change="() => handleChangeSwitch(chatDetails.mode)" />
 					<p>Agente IA</p>
 				</div>
 			</div>
@@ -37,60 +37,42 @@
 					</div>
 				</div>
 			</el-scrollbar>
-			<div v-if="chatDetails.mode === 1"
+			<div v-if="chatDetails?.mode === 1"
 				class="d-middle-center min-h-[45px] rounded-xl bg-dark-gray-50 mx-4 mb-4 mt-2">
-				<p class="f-t-14 text-mid-gray-600">No puedes enviar mensajes cuando el agente
-					IA está activo</p>
+				<p class="f-t-14 text-mid-gray-600">No puedes enviar mensajes cuando el agente IA esta activo</p>
 			</div>
 			<TextField v-else v-model="writeMessage" placeholder="Escribe un mensaje"
 				:autosize="{ minRows: 2, maxRows: 2 }" @sendMessage="sendMessage" class="mx-4 mb-4 mt-2"
 				:maxlength="255" />
 		</div>
-		<viewDetailClient v-if="chatDetails" :info="chatDetails" />
+		<viewDetailClient v-if="chatDetails" :info="chatDetails" @refresh="loadLeadInformation" />
 	</div>
 </template>
 
 <script setup>
-import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue';
+import { ref, computed, nextTick, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { request } from "@request";
 import TextField from '@comp/TextField.vue';
 import chatMessage from '../components/chatMessage.vue'
 import viewDetailClient from '../partials/viewDetailClient.vue'
+import {
+	getLeadInformation,
+	getLeadMessages,
+	sendLeadMessage,
+	toggleLeadMode,
+} from '../services/chatService';
 
 const scrollbarRef = ref(null)
 
 const route = useRoute()
-
-const idOpportunity = 1
+const idOpportunity = computed(() => Number(route.params.idChat))
 
 const loadTriggerRef = ref(null)
 
 const isLoadingMore = ref(false)
-const chatDetails = ref(
-	{
-		idChat: 1,
-		mode: 1,
-		exception: null
-	}
-)
-const messages = ref([
-	{
-		idChatMessage: 1,
-		type: 1,
-		content: "Hola, ¿en qué puedo ayudarte?"
-	},
-	{
-		idChatMessage: 2,
-		type: 2,
-		content: "Hola, tengo una pregunta sobre mi pedido."
-	},
-	{
-		idChatMessage: 3,
-		type: 1,
-		content: "Claro, ¿cuál es tu número de pedido?"
-	}
-])
+const chatDetails = ref(null)
+const messages = ref([])
 const pagination = ref(null)
 
 const writeMessage = ref('')
@@ -105,31 +87,62 @@ const scrollToBottom = () => {
 	})
 }
 
-onMounted(() => {
-	setTimeout(scrollToBottom, 300)
-
-})
-
+onMounted(loadChat)
 
 async function handleChangeSwitch(value) {
 	if (isLoadingMore.value) return
 
-	const finalMode = value === 1 ? 2 : 1
+	isLoadingMore.value = true
+	const { data, error } = await request(() => toggleLeadMode(idOpportunity.value), true)
 
-	try {
-		isLoadingMore.value = true
+	if (!error) {
+		chatDetails.value.mode = data?.data?.mode ?? (value === 1 ? 2 : 1)
+	}
 
-		chatDetails.value.mode = finalMode
-	} catch (error) {
-		console.error("Error:", error);
-	} finally {
-		isLoadingMore.value = false
+	isLoadingMore.value = false
+}
+
+async function sendMessage(message) {
+	const content = (message ?? writeMessage.value).trim()
+	if (!content) return
+
+	const { data, error } = await request(() => sendLeadMessage(idOpportunity.value, content), true)
+
+	if (!error) {
+		messages.value.push(data?.data ?? {
+			idChatMessage: Date.now(),
+			type: 2,
+			content,
+		})
+		scrollToBottom()
 	}
 }
 
-async function sendMessage() {
-	if (!writeMessage.value) return
+async function loadChat() {
+	if (!idOpportunity.value) return
+
+	await Promise.all([loadLeadInformation(), loadMessages()])
+	scrollToBottom()
 }
+
+async function loadLeadInformation() {
+	const { data, error } = await request(() => getLeadInformation(idOpportunity.value), { success: false })
+	if (!error) chatDetails.value = data?.data
+}
+
+async function loadMessages(page = 1) {
+	isLoadingMore.value = true
+	const { data, error } = await request(() => getLeadMessages(idOpportunity.value, page), { success: false })
+
+	if (!error) {
+		pagination.value = data?.data ?? null
+		messages.value = [...(pagination.value?.data ?? [])].reverse()
+	}
+
+	isLoadingMore.value = false
+}
+
+watch(() => route.params.idChat, loadChat)
 </script>
 
 <style scoped>
