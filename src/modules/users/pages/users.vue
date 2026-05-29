@@ -4,7 +4,7 @@
 		<el-scrollbar view-class="px-10 pt-10 pb-6">
 			<div class="d-middle gap-x-4 text-[rgb(var(--xx-color-text-primary))]">
 				<h1 class="f-tm-18 self-end me-auto">Lista de usuarios</h1>
-				<el-input v-model="search" placeholder="Buscar" class="relative self-end !w-[250px]" >
+				<el-input v-model="search" placeholder="Buscar" class="relative self-end !w-[250px]" clearable>
 					<template #suffix>
 						<Button type-style="tertiary" class="absolute right-0 !rounded-lg !p-0" disabled>
 							<i class="icon-search !text-xl" />
@@ -25,7 +25,7 @@
 				</Button>
 			</div>
 			<div class="d-middle gap-8 mt-12 flex-wrap">
-				<userCard v-for="(user, key) in usersData" :key="key" :data="user" @openEdit="openEditUser" @openLink="openLinkForza"
+				<userCard v-for="(user, key) in filteredUsers" :key="key" :data="user" @openEdit="openEditUser" @openLink="openLinkForza"
 					@openDelete="openDeleteUser" @onDelete="deleteUser" @onChangeState="toggleUserState"
 					@handleChangeState="handleChangeState" @openEditSedes="openEditSedes" />
 			</div>
@@ -54,7 +54,7 @@
 </template>
 
 <script setup>
-import { ref, onBeforeMount, watch } from 'vue';
+import { computed, ref, onBeforeMount } from 'vue';
 import modalManageUser from '../partials/modalManageUser.vue';
 import modalEditSedes from '../partials/modalEditSedes.vue';
 import modalPermissionSettings from '../partials/modalPermissionSettings.vue';
@@ -88,7 +88,35 @@ const userTypeOptions = ref([
 	}
 ])
 
-let searchTimeout = null;
+const filteredUsers = computed(() => {
+	const searchValue = normalizeText(search.value)
+	const selectedType = userTypeFilter.value ? Number(userTypeFilter.value) : null
+
+	return usersData.value.filter((user) => {
+		const userType = Number(user.type)
+		const matchesType = !selectedType || userType === selectedType
+
+		if (!searchValue) return matchesType
+
+		const userTypeName = userType === 1 ? 'Administrador' : 'Comercial'
+		const searchableText = normalizeText([
+			user.name,
+			user.email,
+			user.headquarter,
+			userTypeName
+		].filter(Boolean).join(' '))
+
+		return matchesType && searchableText.includes(searchValue)
+	})
+})
+
+function normalizeText(value) {
+	return String(value ?? '')
+		.toLowerCase()
+		.normalize('NFD')
+		.replace(/[\u0300-\u036f]/g, '')
+		.trim()
+}
 
 async function getLoadUsers() {
 	const { data, error } = await request(() => getUsers());

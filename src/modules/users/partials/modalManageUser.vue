@@ -207,7 +207,7 @@ async function open(type = 1, userData = null) {
             model.value.idSede = sedeEncontrada.idHeadquarter;
         }
     }
-
+    
     isLoaded.value = true
     refModalManageUser.value.open()
 }
