@@ -160,7 +160,7 @@ import { ElNotification } from 'element-plus';
 import modalHistory from '../partials/modalHistory.vue'
 import modalReservationHistory from '../partials/modalReservationHistory.vue'
 import modalComments from '../partials/modalComments.vue'
-import { getClients, getHeadquarters, getCustomerTypes, changeCustomerType, getCustomerComments } from '../services/clientService'
+import { getClients, getHeadquarters, getCustomerTypes, changeCustomerType } from '../services/clientService'
 
 const refModalInactiveClient = ref()
 const refModalActiveClient = ref()
@@ -169,7 +169,6 @@ const refModalReservationHistory = ref()
 const refModalComments = ref()
 
 const loading = ref(false)
-const loadingCommentCounts = ref(false)
 const exporting = ref(false)
 
 const checkInState = [
@@ -219,35 +218,10 @@ const fetchClients = async () => {
 
 		const array = Array.isArray(data) ? data : (data?.data || []);
 		customers.value = array;
-		await syncCommentCounts();
-
-		console.log('CLIENTS 👉', array);
-		console.log('IS ARRAY:', Array.isArray(array));
 	} finally {
 		loading.value = false;
 	}
 };
-
-async function syncCommentCounts() {
-	if (loadingCommentCounts.value || customers.value.length === 0) return
-
-	loadingCommentCounts.value = true
-
-	try {
-		await Promise.all(customers.value.map(async (customer) => {
-			const idCustomer = getCustomerId(customer)
-			if (!idCustomer) return
-
-			const { data, error } = await request(() => getCustomerComments(idCustomer), false)
-			if (error) return
-
-			const comments = Array.isArray(data) ? data : (data?.data || [])
-			customer.countComments = comments.length
-		}))
-	} finally {
-		loadingCommentCounts.value = false
-	}
-}
 
 const fetchHeadquarters = async () => {
 	const { data, error } = await request(() => getHeadquarters(), false);
