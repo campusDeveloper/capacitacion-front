@@ -6,11 +6,11 @@
 				<p class="text-mid-gray-600 f-ts-14">Leads por seguimiento</p>
 			</div>
 			<el-scrollbar view-class="bg-white-50 p-4">
-				<div v-for="tracking in trackingData" :key="tracking.idTracking"
+					<div v-for="tracking in trackingData" :key="tracking.idTracking"
 					class="hover:bg-dark-gray-50 rounded-lg p-3">
 					<div class="d-middle-bt text-mid-gray-600">
 						<div class="d-middle border h-[25px] px-2 w-fit rounded-lg"
-							:style="`border-color: ${'#81C8A3'};`">
+							:style="{ borderColor: tracking.color }">
 							<p class="f-t-14">{{ tracking.name }}</p>
 						</div>
 						<p class="f-tm-16">{{ formatNumber(tracking.totalLeads) }}</p>
@@ -54,7 +54,7 @@ import Echarts from '@comp/Echarts.vue';
 import { formatCurrencyCOP, formatNumber } from '../utils/format.js'
 import cardGraphics from '../components/cardGraphics.vue';
 import { request } from "@request";
-
+import { getDashboardLeads } from '../services/dashboardService.js';
 
 const props = defineProps({
 	idTime: Number
@@ -64,6 +64,40 @@ const trackingData = ref([]);
 const clientData = ref([]);
 const reservationData = ref([]);
 const loading = ref(false);
+const error = ref(null);
+
+function normalizeTrackingData(apiData) {
+	return apiData.map(item => ({
+		idTracking: item.idTracking,
+		name: item.name,
+		color: item.color,
+		totalLeads: item.totalLeads,
+		children: (item.children ?? []).map(child => ({
+			idChildren: child.idTrackingChildren,
+			childrenName: child.name,
+			totalChildrenLeads: child.leads
+		}))
+	}));
+}
+
+async function getLeadsData() {
+	loading.value = true;
+	error.value = null;
+
+	const { data, error: reqError } = await request(
+		() => getDashboardLeads({ tiempo: props.idTime }),
+		false
+	);
+
+	if (reqError) {
+		error.value = reqError;
+		trackingData.value = [];
+	} else {
+		trackingData.value = normalizeTrackingData(data?.data ?? []);
+	}
+
+	loading.value = false;
+}
 const yAxisData = computed(() =>
 	reservationData.value.map(item => item.roomType)
 );
@@ -176,7 +210,12 @@ const optionsReservation = computed(() => {
 	}
 })
 
-//Funciones
+onMounted(() => {
+	getLeadsData();
+});
 
+watch(() => props.idTime, () => {
+	getLeadsData();
+});
 
 </script>
