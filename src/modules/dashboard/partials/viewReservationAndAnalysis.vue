@@ -24,14 +24,16 @@
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
 import Echarts from '@comp/Echarts.vue';
-import { currencyFormat } from '@/util/currencyFormat.js'
+import { formatCurrencyCOP, formatNumber } from '../utils/format.js'
 import cardGraphics from '../components/cardGraphics.vue';
 import { request } from "@request"
+import { getReservationsHeadquarters } from '../services/dashboardService.js'
 
 const props = defineProps({
 	idTime: Number
 });
 const loading = ref(false);
+const error = ref(null);
 const headquarterData = ref([]);
 const comparativeData = ref([]);
 const optionsYears = ref([
@@ -43,6 +45,33 @@ const optionsYears = ref([
 ]);
 
 const idYear = ref(2025);
+
+function normalizeHeadquartersData(apiData) {
+	return apiData.map(item => ({
+		name: item.name,
+		reservationsTotal: Number(item.reservationTotal) || 0,
+		valueTotal: item.valueTotal
+	}));
+}
+
+async function getHeadquartersData() {
+	loading.value = true;
+	error.value = null;
+
+	const { data, error: reqError } = await request(
+		() => getReservationsHeadquarters({ tiempo: props.idTime }),
+		false
+	);
+
+	if (reqError) {
+		error.value = reqError;
+		headquarterData.value = [];
+	} else {
+		headquarterData.value = normalizeHeadquartersData(data?.data ?? []);
+	}
+
+	loading.value = false;
+}
 
 const yReservationData = computed(() =>
 	headquarterData.value.map(item => item.name)
@@ -86,8 +115,8 @@ const optionsReservation = computed(() => {
 				return `
 					<div style="width: 160px !important;">
 						<p class="text-white-100 f-ts-14 pb-1">${content.axisValue}</p>
-						<p class="text-white-700 f-t-12">Reservas: ${currencyFormat(content.value) || 0}</p> 
-						<p class="text-white-700 f-t-12">Valor: ${content.data.cases || 0}</p>
+						<p class="text-white-700 f-t-12">Reservas: ${formatNumber(content.value)}</p> 
+						<p class="text-white-700 f-t-12">Valor: ${formatCurrencyCOP(content.data.cases)}</p>
 					</div>
 				`
 			}
@@ -139,7 +168,9 @@ const optionsReservation = computed(() => {
 			label: {
 				show: true,
 				position: 'right',
-				formatter: '{c}',
+				formatter: function (params) {
+					return formatNumber(params.value);
+				},
 				color: '#5D5D5D',
 				fontFamily: 'GoogleSansFlex-Medium',
 				fontWeight: 500,
@@ -189,8 +220,8 @@ const optionsComparative = computed(() => {
 				return `
 					<div style="width: 103px !important;">
 						<p class="text-white-100 f-ts-14 pb-1">Reservaciones ${content.data.monthName}</p>
-						<p class="text-white-500 f-t-13">${current.marker} ${current.data.year}: ${currencyFormat(current.value) || 0}</p>
-						<p class="text-white-500 f-t-13">${last.marker} ${last.data.year}: ${currencyFormat(last.value) || 0}</p>
+						<p class="text-white-500 f-t-13">${current.marker} ${current.data.year}: ${formatNumber(current.value)}</p>
+						<p class="text-white-500 f-t-13">${last.marker} ${last.data.year}: ${formatNumber(last.value)}</p>
 					</div>
 				`
 			}
@@ -248,7 +279,9 @@ const optionsComparative = computed(() => {
 				label: {
 					show: true,
 					position: 'top',
-					formatter: '{c}',
+					formatter: function (params) {
+						return formatNumber(params.value);
+					},
 					color: '#3B3F42',
 					fontFamily: 'GoogleSansFlex-Medium',
 					fontWeight: 500,
@@ -289,6 +322,12 @@ const optionsComparative = computed(() => {
 	}
 })
 
-//Funciones
+onMounted(() => {
+	getHeadquartersData();
+});
+
+watch(() => props.idTime, () => {
+	getHeadquartersData();
+});
 
 </script>

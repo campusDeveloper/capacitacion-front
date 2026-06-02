@@ -13,11 +13,11 @@
 							:style="`border-color: ${'#81C8A3'};`">
 							<p class="f-t-14">{{ tracking.name }}</p>
 						</div>
-						<p class="f-tm-16">{{ tracking.totalLeads }}</p>
+						<p class="f-tm-16">{{ formatNumber(tracking.totalLeads) }}</p>
 					</div>
 					<div v-for="child in tracking.children" :key="child.idChildren" class="d-middle-bt ps-5 my-2">
 						<p class="f-t-14">{{ child.childrenName }}</p>
-						<p class="f-t-14 text-mid-gray-600">{{ child.totalChildrenLeads }}</p>
+						<p class="f-t-14 text-mid-gray-600">{{ formatNumber(child.totalChildrenLeads) }}</p>
 					</div>
 				</div>
 			</el-scrollbar>
@@ -33,7 +33,7 @@
 						<div class="d-middle h-[25px] px-2 w-fit rounded-lg" :style="{ backgroundColor: client.color }">
 							<p class="f-t-14">{{ client.name }}</p>
 						</div>
-						<p class="f-tm-16 text-mid-gray-600">{{ client.cantCustomers }}</p>
+						<p class="f-tm-16 text-mid-gray-600">{{ formatNumber(client.cantCustomers) }}</p>
 					</div>
 				</div>
 			</el-scrollbar>
@@ -51,7 +51,7 @@
 <script setup>
 import { ref, onMounted, computed, watch } from "vue";
 import Echarts from '@comp/Echarts.vue';
-import { currencyFormat } from '@/util/currencyFormat.js'
+import { formatCurrencyCOP, formatNumber } from '../utils/format.js'
 import cardGraphics from '../components/cardGraphics.vue';
 import { request } from "@request";
 
@@ -87,8 +87,8 @@ const optionsReservation = computed(() => {
 				return `
 					<div style="width: 160px !important;">
 						<p class="text-white-100 f-ts-14 pb-1">${content.axisValue}</p>
-						<p class="text-white-700 f-t-12">Reservas: ${currencyFormat(content.value) || 0}</p>
-						<p class="text-white-700 f-t-12">Valor: ${content.data.cases || 0}</p>
+						<p class="text-white-700 f-t-12">Reservas: ${formatNumber(content.value)}</p>
+						<p class="text-white-700 f-t-12">Valor: ${formatCurrencyCOP(content.data.cases)}</p>
 					</div>
 				`
 			}
@@ -140,7 +140,9 @@ const optionsReservation = computed(() => {
 			label: {
 				show: true,
 				position: 'right',
-				formatter: '{c}',
+				formatter: function (params) {
+					return formatNumber(params.value);
+				},
 				color: '#3B3F42',
 				fontFamily: 'GoogleSansFlex-Medium',
 				fontWeight: 500,
