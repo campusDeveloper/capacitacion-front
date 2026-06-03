@@ -258,15 +258,6 @@ const optionsComparative = computed(() => {
 				`
 			}
 		},
-		legend: {
-			top: 0,
-			right: '5%',
-			textStyle: {
-				color: '#5D5D5D',
-				fontFamily: 'GoogleSansFlex-Regular-24pt',
-				fontSize: 12
-			}
-		},
 		grid: {
 			left: '-10%',
 			right: '5%',
