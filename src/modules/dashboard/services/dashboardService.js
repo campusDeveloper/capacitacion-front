@@ -7,3 +7,11 @@ export function getReservationsHeadquarters(params = {}) {
 export function getDashboardLeads(params = {}) {
 	return axios.get('/api/dashboard/leads', { params });
 }
+
+export function getCustomerTypesMetric(params = {}) {
+	return axios.get('/api/dashboard/type-customers', { params });
+}
+
+export function getComparativeYearMetrics(params = {}) {
+	return axios.get('/api/dashboard/comparative/current-year', { params });
+}

@@ -54,7 +54,7 @@ import Echarts from '@comp/Echarts.vue';
 import { formatCurrencyCOP, formatNumber } from '../utils/format.js'
 import cardGraphics from '../components/cardGraphics.vue';
 import { request } from "@request";
-import { getDashboardLeads } from '../services/dashboardService.js';
+import { getDashboardLeads, getCustomerTypesMetric } from '../services/dashboardService.js';
 
 const props = defineProps({
 	idTime: Number
@@ -98,6 +98,28 @@ async function getLeadsData() {
 
 	loading.value = false;
 }
+
+async function getClientTypesData() {
+    loading.value = true;
+    error.value = null;
+    const { data, error: reqError } = await request(
+        () => getCustomerTypesMetric({ tiempo: props.idTime }),
+        false
+    );
+    if (reqError) {
+        error.value = reqError;
+        clientData.value = [];
+    } else {
+        clientData.value = (data?.data ?? []).map(item => ({
+            idType: item.idCustomerType,
+            name: item.name,
+            color: item.color || '#5D5D5D',
+            cantCustomers: Number(item.totalCustomers) || 0
+        }));
+    }
+    loading.value = false;
+}
+
 const yAxisData = computed(() =>
 	reservationData.value.map(item => item.roomType)
 );
@@ -212,10 +234,12 @@ const optionsReservation = computed(() => {
 
 onMounted(() => {
 	getLeadsData();
+	getClientTypesData();
 });
 
 watch(() => props.idTime, () => {
 	getLeadsData();
+	getClientTypesData();
 });
 
 </script>

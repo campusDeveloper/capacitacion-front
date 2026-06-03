@@ -27,7 +27,7 @@ import Echarts from '@comp/Echarts.vue';
 import { formatCurrencyCOP, formatNumber } from '../utils/format.js'
 import cardGraphics from '../components/cardGraphics.vue';
 import { request } from "@request"
-import { getReservationsHeadquarters } from '../services/dashboardService.js'
+import { getReservationsHeadquarters, getComparativeYearMetrics } from '../services/dashboardService.js'
 
 const props = defineProps({
 	idTime: Number
@@ -36,15 +36,15 @@ const loading = ref(false);
 const error = ref(null);
 const headquarterData = ref([]);
 const comparativeData = ref([]);
-const optionsYears = ref([
-	{ value: 2021, label: '2021' },
-	{ value: 2022, label: '2022' },
-	{ value: 2023, label: '2023' },
-	{ value: 2024, label: '2024' },
-	{ value: 2025, label: '2025' }
-]);
+const currentYear = new Date().getFullYear();
+const optionsYears = computed(() =>
+	Array.from({ length: 5 }, (_, index) => {
+		const year = currentYear - index - 1;
+		return { value: year, label: String(year) };
+	})
+);
 
-const idYear = ref(2025);
+const idYear = ref(currentYear - 1);
 
 function normalizeHeadquartersData(apiData) {
 	return apiData.map(item => ({
@@ -73,6 +73,25 @@ async function getHeadquartersData() {
 	loading.value = false;
 }
 
+async function getComparativeData() {
+    loading.value = true;
+    error.value = null;
+
+    const { data, error: reqError } = await request(
+        () => getComparativeYearMetrics({ tiempo: props.idTime, year: idYear.value }),
+        false
+    );
+
+    if (reqError) {
+        error.value = reqError;
+        comparativeData.value = [];
+    } else {
+        comparativeData.value = data?.data ?? [];
+    }
+
+    loading.value = false;
+}
+
 const yReservationData = computed(() =>
 	headquarterData.value.map(item => item.name)
 );
@@ -98,6 +117,19 @@ const lastYearData = computed(() =>
 		monthName: item.monthName,
 		year: item.year
 	})) ?? []
+);
+
+const comparativeMonths = computed(() => {
+	const months = currentYearData.value.length ? currentYearData.value : lastYearData.value;
+	return months.map(item => item.monthName);
+});
+
+const currentYearLabel = computed(() =>
+	currentYearData.value[0]?.year ? String(currentYearData.value[0].year) : 'Año actual'
+);
+
+const lastYearLabel = computed(() =>
+	lastYearData.value[0]?.year ? String(lastYearData.value[0].year) : String(idYear.value)
 );
 
 
@@ -215,22 +247,31 @@ const optionsComparative = computed(() => {
 			borderColor: '#1F2122',
 			formatter: function (params) {
 				const content = params[0]
-				const current = params.find(p => p.seriesName === 'Direct')
-				const last = params.find(p => p.seriesName === 'last')
+				const current = params.find(p => p.seriesName === currentYearLabel.value)
+				const last = params.find(p => p.seriesName === lastYearLabel.value)
 				return `
 					<div style="width: 103px !important;">
-						<p class="text-white-100 f-ts-14 pb-1">Reservaciones ${content.data.monthName}</p>
-						<p class="text-white-500 f-t-13">${current.marker} ${current.data.year}: ${formatNumber(current.value)}</p>
-						<p class="text-white-500 f-t-13">${last.marker} ${last.data.year}: ${formatNumber(last.value)}</p>
+						<p class="text-white-100 f-ts-14 pb-1">Reservaciones ${content.axisValue}</p>
+						<p class="text-white-500 f-t-13">${current?.marker ?? ''} ${currentYearLabel.value}: ${formatNumber(current?.value ?? 0)}</p>
+						<p class="text-white-500 f-t-13">${last?.marker ?? ''} ${lastYearLabel.value}: ${formatNumber(last?.value ?? 0)}</p>
 					</div>
 				`
+			}
+		},
+		legend: {
+			top: 0,
+			right: '5%',
+			textStyle: {
+				color: '#5D5D5D',
+				fontFamily: 'GoogleSansFlex-Regular-24pt',
+				fontSize: 12
 			}
 		},
 		grid: {
 			left: '-10%',
 			right: '5%',
 			bottom: '15%',
-			top: '10%',
+			top: '16%',
 			containLabel: true
 		},
 		xAxis: {
@@ -249,7 +290,7 @@ const optionsComparative = computed(() => {
 				interval: 0,
 				color: '#5D5D5D',
 			},
-			data: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+			data: comparativeMonths.value
 		},
 		yAxis: {
 			type: 'value',
@@ -273,7 +314,7 @@ const optionsComparative = computed(() => {
 		},
 		series: [
 			{
-				name: 'Direct',
+				name: currentYearLabel.value,
 				type: 'bar',
 				stack: 'total',
 				label: {
@@ -306,7 +347,7 @@ const optionsComparative = computed(() => {
 				}
 			},
 			{
-				name: 'last',
+				name: lastYearLabel.value,
 				data: lastYearData.value,
 				type: 'line',
 				symbol: 'circle',
@@ -324,10 +365,16 @@ const optionsComparative = computed(() => {
 
 onMounted(() => {
 	getHeadquartersData();
+	getComparativeData();
+});
+
+watch(idYear, () => {
+    getComparativeData();
 });
 
 watch(() => props.idTime, () => {
 	getHeadquartersData();
+	getComparativeData();
 });
 
 </script>
