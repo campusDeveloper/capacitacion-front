@@ -15,3 +15,7 @@ export function getCustomerTypesMetric(params = {}) {
 export function getComparativeYearMetrics(params = {}) {
 	return axios.get('/api/dashboard/comparative/current-year', { params });
 }
+
+export function getGeneralStatistics(params = {}) {
+	return axios.get('/api/dashboard/general-statistics', { params });
+}
