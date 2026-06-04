@@ -13,41 +13,44 @@
 					</el-select>
 				</div>
 			</div>
-			<div class="rounded-xl shadow-[0_1px_2px_-1px_rgba(0,0,0,0.1),0_1px_3px_0_rgba(0,0,0,0.1)] bg-white-50 p-6 flex justify-between gap-x-5">
+			<div class="grid grid-cols-4 gap-5">
 				<div
-					class="d-middle gap-x-4 rounded-lg bg-brand-50 px-4 py-2 text-mid-gray-600 w-[260px] h-[83px]">
-					<p class="f-ts-18">Clientes totales</p>
-					<p class="f-tm-16">{{ formatNumber(generalData.customers) }}</p>
-				</div>
-				<div class="d-middle gap-x-2 bg-white-300 rounded-xl w-[260px] h-[40px] ps-2 pe-4">
-					<i class="icon-message-notif text-xl text-brand-500" />
-					<p class="f-tm-14">Casos atendidos</p>
-					<p class="f-ts-16 text-mid-gray-600 ms-auto">{{ formatNumber(generalData.casesAttended) }}</p>
-				</div>
-				<div class="d-middle gap-x-2 bg-white-300 rounded-xl w-[260px] h-[40px] ps-2 pe-4">
-					<i class="icon-cup text-xl text-brand-500" />
-					<p class="f-tm-14">Casos efectivos</p>
-					<p class="f-ts-16 text-mid-gray-600 ms-auto">{{ formatNumber(generalData.casesEffective) }}</p>
+					class="d-middle gap-x-4 rounded-xl bg-brand-50 px-4 py-2 text-mid-gray-600 col-span-1 row-span-2 shadow-[0_1px_2px_-1px_rgba(0,0,0,0.1),0_1px_3px_0_rgba(0,0,0,0.1)]">
+					<p class="f-tm-14">Clientes totales</p>
+					<p class="f-ts-16 ms-auto">{{ formatNumber(generalData.customers) }}</p>
 				</div>
 				<el-tooltip content="Leads atendidos vs concretaron reservas" placement="top">
-					<div class="d-middle gap-x-2 bg-green-50 rounded-xl w-[260px] h-[40px] px-4">
+					<div
+						class="d-middle gap-x-2 rounded-xl bg-green-50 px-4 py-2 text-mid-gray-600 col-span-1 row-span-2 shadow-[0_1px_2px_-1px_rgba(0,0,0,0.1),0_1px_3px_0_rgba(0,0,0,0.1)]">
 						<p class="f-tm-14">Tasa de conversión</p>
-						<p class="f-ts-16 text-mid-gray-600 ms-auto">{{ generalData.conversionRate }}</p>
+						<p class="f-ts-16 ms-auto">{{ generalData.conversionRate }}</p>
 					</div>
 				</el-tooltip>
-			</div>
-			<cardGraphics class="flex gap-x-3">
-				<div class="d-middle bg-white-300 rounded-xl w-full h-[40px] ps-2 pe-4">
-					<i class="icon-magic-star text-xl text-brand-500 pe-1" />
-					<p class="f-tm-14">Reservas - Agente especializado</p>
-					<p class="f-ts-16 text-mid-gray-600 ms-auto">{{ formatNumber(generalData.typeException) }}</p>
+				<div
+					class="d-middle gap-x-2 rounded-xl bg-white-300 px-4 py-2 text-mid-gray-600 col-span-1 row-span-1 shadow-[0_1px_2px_-1px_rgba(0,0,0,0.1),0_1px_3px_0_rgba(0,0,0,0.1)]">
+					<i class="icon-cup text-xl text-brand-500" />
+					<p class="f-tm-14">Casos efectivos</p>
+					<p class="f-ts-16 ms-auto">{{ formatNumber(generalData.casesEffective) }}</p>
 				</div>
-				<div class="d-middle gap-x-2 bg-red-50 rounded-xl w-full h-[40px] ps-2 pe-4">
+				<div
+					class="d-middle gap-x-2 rounded-xl bg-white-300 px-4 py-2 text-mid-gray-600 col-span-1 row-span-1 shadow-[0_1px_2px_-1px_rgba(0,0,0,0.1),0_1px_3px_0_rgba(0,0,0,0.1)]">
+					<i class="icon-message-notif text-xl text-brand-500" />
+					<p class="f-tm-14">Casos atendidos</p>
+					<p class="f-ts-16 ms-auto">{{ formatNumber(generalData.casesAttended) }}</p>
+				</div>
+				<div
+					class="d-middle gap-x-2 rounded-xl bg-white-300 px-4 py-2 text-mid-gray-600 col-span-1 row-span-1 shadow-[0_1px_2px_-1px_rgba(0,0,0,0.1),0_1px_3px_0_rgba(0,0,0,0.1)]">
+					<i class="icon-magic-star text-xl text-brand-500" />
+					<p class="f-tm-14">Reservas - Agente especializado</p>
+					<p class="f-ts-16 ms-auto">{{ formatNumber(generalData.typeException) }}</p>
+				</div>
+				<div
+					class="d-middle gap-x-2 rounded-xl bg-red-50 px-4 py-2 text-mid-gray-600 col-span-1 row-span-1 shadow-[0_1px_2px_-1px_rgba(0,0,0,0.1),0_1px_3px_0_rgba(0,0,0,0.1)]">
 					<i class="icon-close-circle text-xl text-red-s-600" />
 					<p class="f-tm-14">Reservas no concretadas</p>
-					<p class="f-ts-16 text-mid-gray-600 ms-auto">{{ formatNumber(generalData.reservationCanceled) }}</p>
+					<p class="f-ts-16 ms-auto">{{ formatNumber(generalData.reservationCanceled) }}</p>
 				</div>
-			</cardGraphics>
+			</div>
 			<viewReservationAndAnalysis :idTime="idTime" />
 			<viewGraphBottom :idTime="idTime" />
 		</el-scrollbar>
@@ -57,7 +60,6 @@
 <script setup>
 import { ref, onMounted, watch } from "vue";
 import { formatNumber } from '../utils/format.js'
-import cardGraphics from '../components/cardGraphics.vue';
 import viewReservationAndAnalysis from '../partials/viewReservationAndAnalysis.vue';
 import viewGraphBottom from '../partials/viewGraphBottom.vue'
 import { ElNotification } from 'element-plus'
