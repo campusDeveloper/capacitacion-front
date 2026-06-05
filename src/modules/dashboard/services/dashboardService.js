@@ -16,6 +16,10 @@ export function getComparativeYearMetrics(params = {}) {
 	return axios.get('/api/dashboard/comparative/current-year', { params });
 }
 
+export function getReservationsByRoomType(params = {}) {
+	return axios.get("/api/dashboard/room-type", { params }); 
+}
+
 export function getGeneralStatistics(params = {}) {
 	return axios.get('/api/dashboard/general-statistics', { params });
 }
